@@ -9,6 +9,7 @@
 import sys
 import os
 import numpy
+import re
 import xml.parsers.expat as sax
 from optparse import OptionParser
 
@@ -53,7 +54,7 @@ class ProgressTracker:
       
       if progress >= x:
         pb += "="
-      elif progress < x and progress > x - 0.05:
+      elif progress < x and progress > x - 0.025:
         pb += "-"
       else:
         pb += " "
@@ -64,20 +65,15 @@ class ProgressTracker:
 
 class ParserCallback:
   """ Handles parser events such as encountering articles, sections etc """
-  def __init__(self, xml_open_tag, xml_close_tag, article, section, word, punctuation):
-    self.xml_open_tag = xml_open_tag
-    self.xml_close_tag = xml_close_tag
+  def __init__(self, article):
     self.article = article
-    self.section = section
-    self.word = word
-    self.punctuation = punctuation
 
 
 def fprint(x):
   """ makes print available as a first class function """
   print x
   
-printing_callback = ParserCallback(fprint, fprint, fprint, fprint, fprint, fprint)
+printing_callback = ParserCallback(fprint)
     
 class Article:
   """ Stores the contents of a Wikipedia article """
@@ -103,6 +99,9 @@ class WikiParser:
     self.buffer_size = 10*1024*1024 # 10MB
     self.input_size  = os.path.getsize(self.input_file_path)
     self.tracker = ProgressTracker(0, float(self.input_size) / (1024*1024), "MB")
+
+    # Articles whose titles start with "<type>:" will be ignored.
+    self.ignoredArticleTypes = ["wikipedia", "category", "template"]
 
     
     # setup the SAX XML parser and its callbacks
@@ -163,6 +162,7 @@ class WikiParser:
       if not (self.ignore_redirects and self.article.is_redirect):
         pass
 
+      self.new_article(self.article)
       self.article = None
 
     # clean up state associated with the node    
@@ -171,6 +171,29 @@ class WikiParser:
     else:
       err("Mismatched closing tag: " + name)
     self.text = [];
+
+  def new_article(self, article):
+    if ':' in  article.title:
+      articleType = article.title.split(':')[0].lower()
+      if articleType in self.ignoredArticleTypes:
+        return
+
+    sanitized = article.text
+    # text-ify named article hyperlinks e.g. [United States|American]
+    sanitized = re.sub(r"\[\[(.+?)\|(.*?)\]\]", r"\2", sanitized)
+
+    # textify unnamed article hyperlinks e.g. [United States]
+    sanitized = re.sub(r"\[\[(.+?)\]\]", r"\1", sanitized)
+
+    # remove metadata
+    sanitized = re.sub(r"\{\{.+?\}\}", r"", sanitized, flags=re.DOTALL)
+
+    # remove links to pages in other languages
+    sanitized = re.sub(r"^[a-zA-Z-]+\:.+?$", "", sanitized, flags=re.MULTILINE)
+
+    # remove hard paragraph breaks
+    sanitized = re.sub(r"<\s*\w+\s*/?\s*>", "", sanitized)
+    print sanitized
 
   def get_enclosing_tag(self):
     return None if len(self.enclosing_tags) == 0 else self.enclosing_tags[0]
