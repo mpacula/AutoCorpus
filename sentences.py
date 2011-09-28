@@ -11,6 +11,7 @@ import os
 import numpy
 import re
 import xml.parsers.expat as sax
+from mwlib.uparser import simpleparse
 from optparse import OptionParser
 
 def err(msg):
@@ -179,8 +180,8 @@ class WikiParser:
         return
 
     sanitized = article.text
-    # text-ify named article hyperlinks e.g. [United States|American]
-    sanitized = re.sub(r"\[\[(.+?)\|(.*?)\]\]", r"\2", sanitized)
+    # textify named article hyperlinks e.g. [United States|American]
+    sanitized = re.sub(r"\[\[(.+?\|)+(.*?)\]\]", r"\2", sanitized)
 
     # textify unnamed article hyperlinks e.g. [United States]
     sanitized = re.sub(r"\[\[(.+?)\]\]", r"\1", sanitized)
@@ -188,11 +189,32 @@ class WikiParser:
     # remove metadata
     sanitized = re.sub(r"\{\{.+?\}\}", r"", sanitized, flags=re.DOTALL)
 
+    # remove bold/italics markup
+    sanitized = re.sub(r"''+.*?''+", "", sanitized)
+    
     # remove links to pages in other languages
     sanitized = re.sub(r"^[a-zA-Z-]+\:.+?$", "", sanitized, flags=re.MULTILINE)
 
-    # remove hard paragraph breaks
+    # remove refs
+    sanitized = re.sub(r'<ref>.*?</ref>', "", sanitized)
+    
+    # remove redirects
+    sanitized = re.sub(r"^#REDIRECT.*$", "", sanitized, flags=re.MULTILINE)
+
+    # remove headings
+    sanitized = re.sub(r'=+.*?=+', "", sanitized)
+
+    # remove list markup
+    sanitized = re.sub(r"^(\*|#)+", "", sanitized, flags=re.MULTILINE)
+
+    # remove lone tags
     sanitized = re.sub(r"<\s*\w+\s*/?\s*>", "", sanitized)
+
+    # misc cleanups
+    sanitized = re.sub("}}", "", sanitized)
+    sanitized = re.sub("^\s*\|.*?$", "", sanitized, flags=re.MULTILINE)
+    #sanitized = re.sub("[.*?]", "", sanitized)
+
     print sanitized
 
   def get_enclosing_tag(self):
