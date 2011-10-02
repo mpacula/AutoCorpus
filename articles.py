@@ -1,15 +1,10 @@
 #!/usr/bin/env python
 
-# Processes and transforms Wikipedia article dumps into corpora
-# suitable for Natural Language Processing.
-#
-# (c) Maciej Pacula 2011
-#
-
 import sys
 import os
 import numpy
 import re
+import codecs
 import xml.parsers.expat as sax
 from optparse import OptionParser
 from wiki import *
@@ -17,12 +12,18 @@ from wiki import *
 def fprint(x):
   print x
 
+def save_article(article, directory):
+    filename = re.sub("(\s+)|/", "_", article.title.lower()) + ".txt"
+    f = codecs.open(os.path.join(directory, filename), encoding='utf-8', mode='w')
+    f.write(article.markup)
+    f.close()
+
 if __name__ == "__main__":
   try:
-    parser = OptionParser(usage="usage: sentences.py [options] input-file")
-    parser.add_option("--output",
-                      action="store", type="string", dest="output",
-                      help="file where to store the output sentences")
+    parser = OptionParser(usage="usage: articles.py [options] input-file")
+    parser.add_option("-d",
+                      action="store", type="string", dest="directory",
+                      help="directory where to store the articles")
     (options, args) = parser.parse_args()
 
     if len(args) == 0:
@@ -32,14 +33,14 @@ if __name__ == "__main__":
       print parser.usage
       exit(1)
 
-    if options.output == None:
+    if options.directory == None:
       print parser.usage
       exit(1)
 
 
     input_file_path = args[0]
-    print "Extracting sentences..."
-    parser = WikiParser(input_file_path, lambda a: fprint(a.title))
+    print "Extracting articles..."
+    parser = WikiParser(input_file_path, lambda a: save_article(a, options.directory))
     parser.process()
 
     print "\nCleaning up..."
