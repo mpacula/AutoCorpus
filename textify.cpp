@@ -12,6 +12,17 @@
 
 using namespace std;
 
+char* substr(char* dest, const char* src, int start, int len, int n) 
+{
+  if(start >= n)
+    throw string("Start index outside of string.");
+
+  int actual_length = min(len, n-start);
+  strncpy(dest, &src[start], actual_length);
+  dest[actual_length] = '\0';
+  return dest;
+}
+
 typedef struct _State
 {
   int N; // input length
@@ -43,12 +54,13 @@ private:
   void do_heading();
   void do_nested(string name, char open, char close);
 
+  bool get_link_boundaries(int& start, int& end, int& next);
+
   string get_snippet();
   string get_err(string name);
   string* match(string name, pcre* regexp);
 
   pcre* make_pcre(const char* expr, int options);
-  pcre* re_link;
   pcre* re_nowiki;
   pcre* re_format;
   pcre* re_heading;
@@ -66,7 +78,6 @@ public:
 Textifier::Textifier()
 {  
   // Compile all the regexes we'll need
-  re_link    = make_pcre("^\\[+((\\w|\\s)*?\\|)*([^\\]]*?)\\]+", 0);
   re_nowiki  = make_pcre("^<nowiki>(.*?)</nowiki>", PCRE_MULTILINE | PCRE_DOTALL);
   re_format  = make_pcre("^('+)(.*?)\\1", 0);
   re_heading = make_pcre("^(=+)\\s*(.+?)\\s*\\1", 0);
@@ -89,6 +100,44 @@ pcre* Textifier::make_pcre(const char* expr, int options)
     throw string(os.str());
   }
   return re;
+}
+
+bool Textifier::get_link_boundaries(int& start, int& end, int& next)
+{
+  int i = state.pos;   // current search position
+  int level = 0; // nesting level
+  do {
+    char ch = state.markup[i];
+    switch(ch) {
+    case '[':
+      if(level++ == 0)
+        start = i+1;
+      break;
+
+    case ']':
+      if(--level == 0)
+        end = i;
+      break;
+
+    case '|':
+      if(level == 1) { // does the pipe belong to current link or a nested one?
+        start = i+1;
+        end = start;
+      }
+      break;
+
+    default:
+      end++;
+      break;
+    }
+
+    i++;
+  } while(level > 0 &&
+          i < state.N &&
+          state.markup[i] != '\n');
+
+  next = i;
+  return level == 0; // if 0, then brackets match and this is a correct link  
 }
 
 void Textifier::find_location(long& line, long& column)
@@ -157,7 +206,6 @@ string* Textifier::match(string name, pcre* regexp)
     strncpy(substr, substring_start, substring_length);
     substr[substring_length]='\0';
     state.groups[i].assign(substr);
-    //cout << i << ": " << substr << endl;
   }
   return state.groups;
 }
@@ -187,17 +235,28 @@ void Textifier::append_group_and_skip(int group)
 
 void Textifier::do_link() 
 {
-  if(!match(string("link"), re_link))
-  {
+  int start, end, next;
+  if(get_link_boundaries(start, end, next)) {
+    char contents[end-start+1];
+    substr(contents, state.markup, start, end-start, state.N);
+    if(strchr(contents, ':') != NULL) {
+      // this is a link to the page in a different language:
+      // ignore it
+      state.pos = next;
+    }
+    else {    
+      State state_copy = state;
+      textify(contents, end-start, &state.out[state.pos_out], state.M-state.pos_out);
+      state_copy.pos_out += state.pos_out;
+      state_copy.pos = next;
+      state = state_copy;
+    }
+  } else {
     // Apparently mediawiki allows unmatched open brackets...
     // If that's what we got, it's not a link.
     state.out[state.pos_out++] = state.markup[state.pos++];      
     return;
   }
-  if(state.groups[3].find(':') != string::npos)
-    skip_match(); // skip links to same page in other languages
-  else
-    append_group_and_skip(3);
 }
 
 void Textifier::do_heading() 
@@ -254,11 +313,11 @@ void Textifier::do_nested(string name, char open, char close)
   if(state.markup[state.pos] != open)
     throw get_err(name);
   
-  int count = 0;
+  int level = 0;
   do {
-    if(state.markup[state.pos] == open)       count++;
-    else if(state.markup[state.pos] == close) count--;
-  } while(state.pos++ < state.N && count > 0);
+    if(state.markup[state.pos] == open)       level++;
+    else if(state.markup[state.pos] == close) level--;
+  } while(state.pos++ < state.N && level > 0);
 }
 
 /**
@@ -287,7 +346,12 @@ char* Textifier::textify(const char* markup, const int markup_len,
     else if(starts_with("''"))
       do_format();
     else {
-      out[state.pos_out++] = state.markup[state.pos++];
+      if(state.pos_out == 0 ||
+         state.out[state.pos_out-1] != state.markup[state.pos] ||
+         state.markup[state.pos] != '\n')
+        out[state.pos_out++] = state.markup[state.pos++];
+      else
+        state.pos++;
     }
   }
 

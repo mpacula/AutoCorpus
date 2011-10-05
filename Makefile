@@ -1,5 +1,5 @@
 CPP=g++
-LIBS="-lpcre"
+LIBS=-lpcre
 
 textify: textify.cpp
 	${CPP} textify.cpp $(LIBS) -O3 -o textify
