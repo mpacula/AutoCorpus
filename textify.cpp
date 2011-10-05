@@ -369,6 +369,10 @@ int main(int argc, char** argv)
 
   char* path = argv[1];
   ifstream file(path, ios::in|ios::ate);
+  if(!file) {
+    cerr << "The file '" << path << "' does not exist" << endl;
+    return 1;
+  }
   long size = file.tellg();
   char* markup = new char[size+1];
 
