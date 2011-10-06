@@ -25,13 +25,13 @@ char* substr(char* dest, const char* src, int start, int len, int n)
 
 typedef struct _State
 {
-  int N; // input length
-  int pos; // current position in input
-  const char* markup; // the markup input we're converting
-  char* out;
-  int M; // maximum length of output
-  int pos_out;
-  string groups[10]; // will store regexp matches
+  int         N;          // input length
+  int         pos;        // current position within input
+  const char* markup;     // the markup input we're converting
+  char*       out;        // output string
+  int         M;          // maximum length of output without the terminating \0
+  int         pos_out;    // position within output string
+  string      groups[10]; // will store regexp matches
 } State;
 
 class Textifier 
@@ -52,11 +52,10 @@ private:
   void do_meta();
   void do_nowiki();
   void do_heading();
-  void do_nested(string name, char open, char close);
+  void ignore_nested(string name, char open, char close);
 
   bool get_link_boundaries(int& start, int& end, int& next);
 
-  string get_snippet();
   string get_err(string name);
   string* match(string name, pcre* regexp);
 
@@ -72,6 +71,7 @@ public:
                 char* out, const int out_len);
 
   void find_location(long& line, long& col);
+  string get_snippet();
 };
 
 
@@ -79,7 +79,7 @@ Textifier::Textifier()
 {  
   // Compile all the regexes we'll need
   re_nowiki  = make_pcre("^<nowiki>(.*?)</nowiki>", PCRE_MULTILINE | PCRE_DOTALL);
-  re_format  = make_pcre("^('+)(.*?)\\1", 0);
+  re_format  = make_pcre("^(''+)(.*?)(\\1|\n)", 0);
   re_heading = make_pcre("^(=+)\\s*(.+?)\\s*\\1", 0);
 }
 
@@ -143,11 +143,13 @@ bool Textifier::get_link_boundaries(int& start, int& end, int& next)
 void Textifier::find_location(long& line, long& column)
 {
   line = 1;
-  column = 1;
+  column = 0;
   for(int i = 0; i <= state.pos && i < state.N; i++) {
-    if(state.markup[i] == '\n')
+    if(state.markup[i] == '\n') {
       line++;
-    else if(line == 1)
+      column = 0;
+    }
+    else
       column++;
   }
 }
@@ -169,21 +171,27 @@ bool Textifier::starts_with(const char* str)
     i++;
     j++;
   }
-  return true;
+  return j == strlen(str);
 }
 
 string Textifier::get_snippet()
 {
   char snippet[30];
   strncpy(snippet, get_remaining(), 30);
-  snippet[min(29, state.N-state.pos)] = '\0';
+  
+  const int snippet_len = min(29, state.N-state.pos);
+  snippet[snippet_len] = '\0';
+
+  if(snippet_len < state.N - state.pos)
+    strncpy(&snippet[snippet_len-3], "...", 3); 
+
   return string(snippet);
 }
 
 string Textifier::get_err(string name)
 {
   ostringstream os;
-  os << "Expected " << name << " at '" << get_snippet() << "'";
+  os << "Expected markup type '" << name << "'";
   return os.str();
 }
 
@@ -240,13 +248,19 @@ void Textifier::do_link()
     char contents[end-start+1];
     substr(contents, state.markup, start, end-start, state.N);
     if(strchr(contents, ':') != NULL) {
-      // this is a link to the page in a different language:
-      // ignore it
+      // this is a link to the page in a different language ignore it
       state.pos = next;
     }
     else {    
       State state_copy = state;
-      textify(contents, end-start, &state.out[state.pos_out], state.M-state.pos_out);
+      try {
+	textify(contents, end-start, &state.out[state.pos_out], state.M-state.pos_out);
+      } 
+      catch(string error) {
+	state_copy.pos = start + state.pos; // move the pointer to where recursive call failed
+	state = state_copy;
+	throw error;
+      }
       state_copy.pos_out += state.pos_out;
       state_copy.pos = next;
       state = state_copy;
@@ -272,12 +286,12 @@ void Textifier::do_heading()
 
 void Textifier::do_tag()
 {
-  do_nested(string("tag"), '<', '>');
+  ignore_nested(string("tag"), '<', '>');
 }
 
 void Textifier::do_meta()
 {
-  do_nested(string("meta"), '{', '}');
+  ignore_nested(string("meta"), '{', '}');
 }
 
 void Textifier::do_nowiki()
@@ -297,8 +311,14 @@ void Textifier::do_format()
   State state_copy = state; // Save state. A call to textify() will reset it.
 
   // this call will write textified result directly to state.out
-  textify(contents->c_str(), contents->length(), 
-          &state.out[state.pos_out], state.M-state.pos_out);
+  try {
+    textify(contents->c_str(), contents->length(), 
+	    &state.out[state.pos_out], state.M-state.pos_out);
+  } catch(string error) {
+    state_copy.pos += state.groups[1].size() + state.pos; // move the pointer to where recursive call failed
+    state = state_copy;
+    throw error;
+  }
 
   // output has possibly advanced since we saved the state
   state_copy.pos_out += state.pos_out;
@@ -306,9 +326,14 @@ void Textifier::do_format()
   // restore state
   state = state_copy;
   skip_match();
+
+  // Is this a format that matches until the end of the line? If so, "unconsume"
+  // the newline
+  if(strcmp(state.groups[3].c_str(), "\n") == 0)
+    state.pos--;
 }
 
-void Textifier::do_nested(string name, char open, char close) 
+void Textifier::ignore_nested(string name, char open, char close) 
 {
   if(state.markup[state.pos] != open)
     throw get_err(name);
@@ -391,7 +416,8 @@ int main(int argc, char** argv)
     long line;
     long column;
     tf.find_location(line, column);
-    cerr << "ERROR (" << path << ":" << line << ":" << column << ")  " << err << endl;
+    cerr << "ERROR (" << path << ":" << line << ":" << column << ")  " << err
+	 << " at: " << tf.get_snippet() << endl;
     return 1;
   } 
   delete plaintext;
