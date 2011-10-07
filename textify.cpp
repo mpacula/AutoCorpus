@@ -44,14 +44,16 @@ private:
   const char* get_remaining();
   char* get_current_out();
   void skip_match();
+  void skip_line();
   void append_group_and_skip(int group);
 
   void do_link();
   void do_format();
   void do_tag();
-  void do_meta();
-  void do_nowiki();
+  void do_meta_box();
+  void do_meta_pipe();
   void do_heading();
+  void do_comment();
   void ignore_nested(string name, char open, char close);
 
   bool get_link_boundaries(int& start, int& end, int& next);
@@ -63,6 +65,7 @@ private:
   pcre* re_nowiki;
   pcre* re_format;
   pcre* re_heading;
+  pcre* re_comment;
 
 public:
   Textifier();
@@ -81,6 +84,7 @@ Textifier::Textifier()
   re_nowiki  = make_pcre("^<nowiki>(.*?)</nowiki>", PCRE_MULTILINE | PCRE_DOTALL);
   re_format  = make_pcre("^(''+)(.*?)(\\1|\n)", 0);
   re_heading = make_pcre("^(=+)\\s*(.+?)\\s*\\1", 0);
+  re_comment = make_pcre("<!--.*?-->", PCRE_MULTILINE | PCRE_DOTALL);
 }
 
 Textifier::~Textifier()
@@ -133,8 +137,7 @@ bool Textifier::get_link_boundaries(int& start, int& end, int& next)
 
     i++;
   } while(level > 0 &&
-          i < state.N &&
-          state.markup[i] != '\n');
+          i < state.N);
 
   next = i;
   return level == 0; // if 0, then brackets match and this is a correct link  
@@ -161,6 +164,9 @@ bool Textifier::starts_with(string& str)
 
 bool Textifier::starts_with(const char* str)
 {
+  if(state.N-state.pos < strlen(str))
+    return false;
+
   int i = state.pos;
   int j = 0;
   while(str[j] != '\0' &&
@@ -233,6 +239,11 @@ void Textifier::skip_match()
   state.pos += state.groups[0].length();
 }
 
+void Textifier::skip_line()
+{
+  while(state.pos < state.N && state.markup[state.pos++] != '\n');
+}
+
 void Textifier::append_group_and_skip(int group)
 {
   string* val = &state.groups[group];
@@ -254,12 +265,12 @@ void Textifier::do_link()
     else {    
       State state_copy = state;
       try {
-	textify(contents, end-start, &state.out[state.pos_out], state.M-state.pos_out);
+        textify(contents, end-start, &state.out[state.pos_out], state.M-state.pos_out);
       } 
       catch(string error) {
-	state_copy.pos = start + state.pos; // move the pointer to where recursive call failed
-	state = state_copy;
-	throw error;
+        state_copy.pos = start + state.pos; // move the pointer to where recursive call failed
+        state = state_copy;
+        throw error;
       }
       state_copy.pos_out += state.pos_out;
       state_copy.pos = next;
@@ -286,20 +297,45 @@ void Textifier::do_heading()
 
 void Textifier::do_tag()
 {
-  ignore_nested(string("tag"), '<', '>');
+  int level = 0;
+  bool closed = false;
+
+  do {
+    char ch = state.markup[state.pos];
+    switch(ch) {
+    case '<':
+      level++;
+      break;
+
+    case '>':
+      level--;
+      break;
+
+    case '/':
+      closed = (level == 1); // we must be inside the right closing tag
+      break;
+    }    
+
+    state.pos++;
+  } while((level > 0 || !closed) && state.pos < state.N);
 }
 
-void Textifier::do_meta()
+void Textifier::do_comment()
+{
+  if(!match(string("comment"), re_comment))  
+    throw get_err("comment");
+
+  skip_match();
+}
+
+void Textifier::do_meta_box()
 {
   ignore_nested(string("meta"), '{', '}');
 }
 
-void Textifier::do_nowiki()
+void Textifier::do_meta_pipe()
 {
-  if(!match(string("nowiki"), re_nowiki))
-    throw get_err("nowiki");
-  
-  skip_match();
+  skip_line();
 }
 
 void Textifier::do_format()
@@ -335,14 +371,16 @@ char* Textifier::textify(const char* markup, const int markup_len,
   this->state.pos_out = 0;
 
   while(state.pos < state.N && state.pos_out < state.M) {
-    if(starts_with("<nowiki>"))
-       do_nowiki();
-    else if(starts_with("["))
+    if(starts_with("["))
       do_link();
+    else if(starts_with("<!--"))
+      do_comment();
     else if(starts_with("<"))
       do_tag();
     else if(starts_with("{{") || starts_with("{|"))
-      do_meta();
+      do_meta_box();
+    else if(starts_with("|") && (state.pos==0 || state.markup[state.pos-1]=='\n'))
+      do_meta_pipe();
     else if(starts_with("="))
       do_heading();
     else if(starts_with("''"))
