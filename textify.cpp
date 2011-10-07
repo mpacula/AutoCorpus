@@ -304,33 +304,10 @@ void Textifier::do_nowiki()
 
 void Textifier::do_format()
 {
-  if(!match(string("format"), re_format))
-    throw get_err("format");
-  
-  string* contents = &state.groups[2];
-  State state_copy = state; // Save state. A call to textify() will reset it.
-
-  // this call will write textified result directly to state.out
-  try {
-    textify(contents->c_str(), contents->length(), 
-	    &state.out[state.pos_out], state.M-state.pos_out);
-  } catch(string error) {
-    state_copy.pos += state.groups[1].size() + state.pos; // move the pointer to where recursive call failed
-    state = state_copy;
-    throw error;
+  // ignore all immediate occurences of two or more apostrophes
+  while(state.pos < state.N && state.markup[state.pos] == '\'') {
+    state.pos++;
   }
-
-  // output has possibly advanced since we saved the state
-  state_copy.pos_out += state.pos_out;
-
-  // restore state
-  state = state_copy;
-  skip_match();
-
-  // Is this a format that matches until the end of the line? If so, "unconsume"
-  // the newline
-  if(strcmp(state.groups[3].c_str(), "\n") == 0)
-    state.pos--;
 }
 
 void Textifier::ignore_nested(string name, char open, char close) 
