@@ -12,7 +12,7 @@ typedef struct _State
   char*            out;        // output std::string
   size_t           M;          // maximum length of output without the terminating \0
   size_t           pos_out;    // position within output std::string
-  std::string      groups[10]; // will store regexp matches
+  std::string      groups[10]; // stores regexp matches
 } State;
 
 class Textifier 
