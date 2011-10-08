@@ -11,4 +11,4 @@ bin/textify: $(OBJFILES)
 	$(COMPILE) -o $@ $<
 
 clean:
-	rm -f *.o textify
+	rm -f *.o bin/*
