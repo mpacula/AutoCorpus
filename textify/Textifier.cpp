@@ -1,14 +1,10 @@
-/*
- * Converts media wiki markup into plaintext
- */
-
-#include <iostream>
-#include <sstream>
-#include <fstream>
 #include <string.h>
+#include <string>
+#include <sstream>
 #include <pcre.h>
 #include <math.h>
-#include <dirent.h>
+
+#include "Textifier.h"
 
 using namespace std;
 
@@ -22,62 +18,6 @@ char* substr(char* dest, const char* src, int start, int len, int n)
   dest[actual_length] = '\0';
   return dest;
 }
-
-typedef struct _State
-{
-  int         N;          // input length
-  int         pos;        // current position within input
-  const char* markup;     // the markup input we're converting
-  char*       out;        // output string
-  int         M;          // maximum length of output without the terminating \0
-  int         pos_out;    // position within output string
-  string      groups[10]; // will store regexp matches
-} State;
-
-class Textifier 
-{
-private:
-  State state;
-
-  bool starts_with(string& str);
-  bool starts_with(const char* str);
-  const char* get_remaining();
-  char* get_current_out();
-  void skip_match();
-  void skip_line();
-  void append_group_and_skip(int group);
-
-  void do_link();
-  void do_format();
-  void do_tag();
-  void do_meta_box();
-  void do_meta_pipe();
-  void do_heading();
-  void do_comment();
-  void ignore_nested(string name, char open, char close);
-
-  bool get_link_boundaries(int& start, int& end, int& next);
-
-  bool at_line_start();
-
-  string get_err(string name);
-  string* match(string name, pcre* regexp);
-
-  pcre* make_pcre(const char* expr, int options);
-  pcre* re_format;
-  pcre* re_heading;
-  pcre* re_comment;
-
-public:
-  Textifier();
-  ~Textifier();
-  char* textify(const char* markup, const int markup_len,
-                char* out, const int out_len);
-
-  void find_location(long& line, long& col);
-  string get_snippet();
-};
-
 
 Textifier::Textifier()
 {  
@@ -111,7 +51,7 @@ pcre* Textifier::make_pcre(const char* expr, int options)
 
 bool Textifier::get_link_boundaries(int& start, int& end, int& next)
 {
-  int i = state.pos;   // current search position
+  size_t i = state.pos;   // current search position
   int level = 0; // nesting level
   do {
     char ch = state.markup[i];
@@ -150,7 +90,7 @@ void Textifier::find_location(long& line, long& column)
 {
   line = 1;
   column = 0;
-  for(int i = 0; i <= state.pos && i < state.N; i++) {
+  for(size_t i = 0; i <= state.pos && i < state.N; i++) {
     if(state.markup[i] == '\n') {
       line++;
       column = 0;
@@ -170,8 +110,8 @@ bool Textifier::starts_with(const char* str)
   if(state.N-state.pos < strlen(str))
     return false;
 
-  int i = state.pos;
-  int j = 0;
+  size_t i = state.pos;
+  size_t j = 0;
   while(str[j] != '\0' &&
         i < state.N) {
     if(state.markup[i] != str[j])
@@ -188,7 +128,7 @@ string Textifier::get_snippet()
   char snippet[30];
   strncpy(snippet, get_remaining(), 30);
   
-  const int snippet_len = min(29, state.N-state.pos);
+  const size_t snippet_len = min((size_t)29, state.N-state.pos);
   snippet[snippet_len] = '\0';
 
   if(snippet_len < state.N - state.pos)
@@ -406,44 +346,4 @@ char* Textifier::textify(const char* markup, const int markup_len,
   out[state.pos_out] = '\0';
 
   return out;
-}
-
-int main(int argc, char** argv) 
-{
-  if(argc != 2) {
-    cerr << "Usage: " << argv[0] << " input-file" << endl;
-    return 1;
-  }
-
-  char* path = argv[1];
-  ifstream file(path, ios::in|ios::ate);
-  if(!file) {
-    cerr << "The file '" << path << "' does not exist" << endl;
-    return 1;
-  }
-  long size = file.tellg();
-  char* markup = new char[size+1];
-
-  file.seekg(0, ios::beg);
-  file.read(markup, size);
-  markup[size] = '\0';
-  file.close();
-  
-  Textifier tf;
-  const int markup_len = strlen(markup);
-  char* plaintext = new char[markup_len+1];
-  try {
-    cout << tf.textify(markup, markup_len, plaintext, markup_len) << endl;
-  }
-  catch(string err) {
-    long line;
-    long column;
-    tf.find_location(line, column);
-    cerr << "ERROR (" << path << ":" << line << ":" << column << ")  " << err
-	 << " at: " << tf.get_snippet() << endl;
-    return 1;
-  } 
-  delete plaintext;
-  delete markup;
-  return 0;
 }
