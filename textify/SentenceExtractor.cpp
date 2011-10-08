@@ -5,18 +5,22 @@
 
 using namespace std;
 
-SentenceExtractor::SentenceExtractor(ExtractorOptions opts) {
+SentenceExtractor::SentenceExtractor(ExtractorOptions opts) 
+{
   this->opts = opts;
 }
 
-SentenceExtractor::~SentenceExtractor() {
+SentenceExtractor::~SentenceExtractor() 
+{
 }
 
-char SentenceExtractor::last_written_char() {
+char SentenceExtractor::last_written_char() 
+{
   return output[output.size()-1];
 }
 
-bool SentenceExtractor::is_last_written_char(const char* chars) {
+bool SentenceExtractor::is_last_written_char(const char* chars) 
+{
   if(output.empty())
     return false;
   const int n = strlen(chars);
@@ -28,7 +32,8 @@ bool SentenceExtractor::is_last_written_char(const char* chars) {
   return false;
 }
 
-bool SentenceExtractor::is_ws(char ch) {
+bool SentenceExtractor::is_ws(char ch) 
+{
   return ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r';
 }
 
@@ -36,7 +41,17 @@ char SentenceExtractor::peek() {
   return input[pos+1];
 }
 
-string SentenceExtractor::extract(const char* input) {
+void SentenceExtractor::newline(int count) 
+{
+  for(int i = output.size()-1; i >= 0 && output[i] == '\n'; i--, count--);  
+
+  while(count-- > 0) {
+    output += '\n';
+  }
+}
+
+string SentenceExtractor::extract(const char* input) 
+{
   this->input = input;
   this->pos = 0;
   this->output.clear();
@@ -48,26 +63,20 @@ string SentenceExtractor::extract(const char* input) {
     switch(ch) {
     case '\n':
       if(opts.separateParagraphs) {
-        if(is_last_written_char("\n"))
-          output += "\n";
-        else
-          output += "\n\n";
+        newline(2);
       }
       break;
       
     case '.':
       output += ch;
       if(is_ws(peek())) {
-        if(!is_last_written_char("\n"))
-          output += "\n";
+        newline(1);
       }
       break;
 
     case '?':
     case '!':
-    case '*':
-      if(!is_last_written_char("\n"))
-        output += "\n";
+      newline(1);
       break;      
 
     case ' ':

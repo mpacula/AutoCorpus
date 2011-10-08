@@ -1,5 +1,6 @@
 #include <string.h>
 #include <string>
+#include <iostream>
 #include <sstream>
 #include <pcre.h>
 #include <math.h>
@@ -290,6 +291,17 @@ void Textifier::do_format()
   }
 }
 
+void Textifier::do_list()
+{
+  while(state.pos < state.N &&
+        (state.markup[state.pos] == '*' ||
+         state.markup[state.pos] == '-' ||
+         state.markup[state.pos] == ' ' ||
+         state.markup[state.pos] == '\t')) {
+    state.pos++;
+  }
+}
+
 void Textifier::ignore_nested(string name, char open, char close) 
 {
   if(state.markup[state.pos] != open)
@@ -302,8 +314,21 @@ void Textifier::ignore_nested(string name, char open, char close)
   } while(state.pos++ < state.N && level > 0);
 }
 
-bool Textifier::at_line_start() {
-  return state.pos==0 || state.markup[state.pos-1]=='\n';
+bool Textifier::at_line_start(const char* str, int pos) {
+  if(pos == 0)
+    return true;
+
+  int i = pos-1;
+  while(i >= 0) {
+    const char ch = str[i--];
+    if(ch == ' ' || ch == '\t' || ch == '\r')
+      continue;
+    else if(ch == '\n')
+      return true;
+    else 
+      return false;
+  }
+  return true;
 }
 
 /**
@@ -327,8 +352,12 @@ char* Textifier::textify(const char* markup, const int markup_len,
       do_tag();
     else if(starts_with("{{") || starts_with("{|"))
       do_meta_box();
-    else if(starts_with("|") && at_line_start())
+    else if(starts_with("|") && at_line_start(state.markup, state.pos))
       do_meta_pipe();
+    else if(at_line_start(state.out, state.pos_out) && (starts_with("*") || starts_with("-")))
+      do_list();
+    else if(at_line_start(state.out, state.pos_out) && starts_with(":"))
+      state.pos++;
     else if(starts_with("="))
       do_heading();
     else if(starts_with("''"))

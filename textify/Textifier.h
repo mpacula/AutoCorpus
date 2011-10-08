@@ -35,11 +35,12 @@ private:
   void do_meta_pipe();
   void do_heading();
   void do_comment();
+  void do_list();
   void ignore_nested(std::string name, char open, char close);
 
   bool get_link_boundaries(int& start, int& end, int& next);
 
-  bool at_line_start();
+  bool at_line_start(const char* str, int pos);
 
   std::string get_err(std::string name);
   std::string* match(std::string name, pcre* regexp);

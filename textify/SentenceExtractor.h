@@ -19,7 +19,8 @@ class SentenceExtractor
   char last_written_char();
   char peek();
   bool is_last_written_char(const char*);
-  bool is_ws(char ch);
+  bool is_ws(char);
+  void newline(int);
 
  public:
   SentenceExtractor(ExtractorOptions);
