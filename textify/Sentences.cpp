@@ -12,17 +12,21 @@ int main(int argc, char** argv)
     return 1;
   }
   
-  string input;
-  string line;
-  while(getline(cin, line)) {
-    input += line;
-    input += "\n";
-  }
-  
   ExtractorOptions opts;
   opts.separateParagraphs = true;
   SentenceExtractor extractor(opts);
-
-  string output = extractor.extract(input.c_str());
-  cout << output << endl;
+  string input;
+  string line;
+  while(getline(cin, line)) {
+    if(line == "\f") {
+        string output = extractor.extract(input.c_str());
+        cout << output << endl;
+        cout << "\f" << endl;
+        input.clear();
+    }
+    else {
+      input += line;
+      input += "\n";
+    }
+  }  
 }

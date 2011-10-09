@@ -21,7 +21,7 @@ def save_article(article, directory):
 
 def print_article(article):
   print unicode(article.markup).encode("utf-8")
-  print "\n\n"
+  print "\n\n\f"
 
 if __name__ == "__main__":
   try:

@@ -21,27 +21,32 @@ int main(int argc, char** argv)
     return 1;
   }
 
+  Textifier tf;
   string input;
   string line;
   while(getline(cin, line)) {
-    input += line;
-    input += "\n";
+    if(line == "\f") { // end of article
+      const int markup_len = input.size();
+      char* plaintext = new char[markup_len+1];
+      try {
+        cout << tf.textify(input.c_str(), markup_len, plaintext, markup_len) << endl;
+        cout << '\f' << endl;
+      }
+      catch(string err) {
+        long line;
+        long column;
+        tf.find_location(line, column);
+        cerr << "ERROR (" << line << ":" << column << ")  " << err
+             << " at: " << tf.get_snippet() << endl;
+      } 
+      delete plaintext;
+      input.clear();
+    }
+    else {
+      input += line;
+      input += "\n";
+    }
   }
 
-  Textifier tf;
-  const int markup_len = input.size();
-  char* plaintext = new char[markup_len+1];
-  try {
-    cout << tf.textify(input.c_str(), markup_len, plaintext, markup_len) << endl;
-  }
-  catch(string err) {
-    long line;
-    long column;
-    tf.find_location(line, column);
-    cerr << "ERROR (" << line << ":" << column << ")  " << err
-	 << " at: " << tf.get_snippet() << endl;
-    return 1;
-  } 
-  delete plaintext;
   return 0;
 }
