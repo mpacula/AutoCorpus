@@ -8,138 +8,6 @@ def err(msg):
   """ Prints a message to stderr, terminating it with a newline """
   sys.stderr.write(msg + "\n")
 
-
-# A fast, finite-state automaton based plaintext converter for mediawiki markup
-class MarkupToTextConverter:
-  """ Converts wiki markup to plain text """
-  def convert(self, markup):
-    self.markup = markup
-    self.N = len(markup)
-    self.pos = 0
-    self.snippets = []
-
-    start = 0
-    end = 0
-    while self.pos < self.N:
-      rest = self.markup[self.pos:]
-      pos_prev = self.pos
-
-      special_handler = None
-      if rest.startswith("<nowiki>"):
-        special_handler = self.do_nowiki
-      elif rest.startswith("["):
-        special_handler = self.do_link
-      elif rest.startswith("<"):
-        special_handler = self.do_tag
-      elif rest.startswith("{{") or rest.startswith("{|"):
-        special_handler = self.do_meta
-      elif rest.startswith("=") and self.line_before().strip() == "":
-        special_handler = self.do_heading
-      elif rest.startswith("''"):
-        special_handler = self.do_format
-
-      if special_handler != None:
-        # one of the special cases above matched: save current snippet
-        self.add_current_snippet(start, end)
-
-        if special_handler != None:
-          special_handler()
-
-          # skip past whatever special handler parsed
-          start = self.pos
-          end = self.pos
-      else:
-        end += 1
-        self.pos += 1
-
-    # add the current snippet, if any
-    self.add_current_snippet(start, end)
-    
-    return "".join(self.snippets)
-
-  def line_before(self):
-    i = self.pos
-    while i > 0 and self.markup[i] != '\n':
-      i -= 1
-    return self.markup[i:self.pos]
-
-  def add_current_snippet(self, start, end):
-    snippet = self.markup[start:end]
-    prev_snippet = None if len(self.snippets) == 0 else self.snippets[-1]
-    
-    # The second "and" clause below avoids multiple newlines. This is for
-    # readability
-    if snippet != "" and (snippet != "\n" or prev_snippet != "\n"):
-      self.snippets.append(snippet)
-
-    
-  def snippet(self):
-    return self.markup[self.pos:self.pos+50]
-
-  def do_link(self):
-    m = re.match(r"^\s*\[+((\w|\s|#)*?\|)?(.*?)\]+", self.markup[self.pos:])
-    if m == None:
-      # not a link, just one or more open brackets
-      self.snippets.append(self.markup[self.pos])
-      self.pos += 1
-      return
-
-    # language link?
-    name = m.group(3)
-    if ':' not in name:
-      self.snippets.append(name)      
-    self.pos += m.end()
-
-  def do_format(self):
-    m = re.match(r"('+)(.*?)\1", self.markup[self.pos:])
-    if m == None:
-      raise Exception("Invalid formatted text: '%s'..." % self.snippet())
-
-    mc = MarkupToTextConverter()
-    self.snippets.append(mc.convert(m.group(2)))
-    self.pos += m.end()
-
-  def do_tag(self):
-    self.do_nested('tag', '<', '>')
-
-  def do_meta(self):
-    self.do_nested('meta', '{', '}')
-
-
-  def do_nested(self, name, open_char, close_char):
-    if self.markup[self.pos] != open_char:
-      raise Exception("Invalid %s markup. Expected '{' at '%s...'" % (name, self.snippet()))
-
-    count = 1
-    while count > 0 and self.pos+1 < len(self.markup):
-      self.pos += 1
-      ch = self.markup[self.pos]
-      if ch == open_char:
-        count += 1
-      elif ch == close_char:
-        count -= 1
-
-    self.pos += 1
-
-  def do_heading(self):
-    m = re.match(r"^\s*(=+)\s*(.+?)\s*\1", self.markup[self.pos:], flags=re.MULTILINE)
-    if m == None:
-      raise Exception("Invalid header at '%s'..." % self.snippet())
-    
-    title = m.group(2)
-    self.snippets.append(title)
-    self.pos += m.end()
-
-  def do_nowiki(self):
-    m = re.match("<nowiki>(.*?)</nowiki>", flags=re.MULTILINE)
-    if m == None:
-      raise Exception("Invalid 'nowiki' tag at '%s'..." % self.snippet())
-
-    # ignore, as it may contain unsanitized markup
-    self.pos += m.end()
-    
-    
-
 class ProgressTracker:
   """Keeps track and displays progress of tasks"""
   
@@ -182,8 +50,7 @@ class ProgressTracker:
         pb += " "
     pb += "]"
     return pb
-    
-  
+
 
 class Article:
   """ Stores the contents of a Wikipedia article """
@@ -191,7 +58,7 @@ class Article:
     self.title = title
     self.markup = markup
     self.is_redirect = is_redirect
-  
+
 
 class WikiParser:
   """Parses the Wikipedia XML and extracts the relevant data,

@@ -95,6 +95,11 @@ string SentenceExtractor::extract(const char* input)
     
     pos++;
   }
+
+  // make sure we have to newlines at the end: this is so that we
+  // can concatenate outputs from multiple articles and have their
+  // paragraphs clearly separated.
+  newline(2);
   
   return this->output;
 }
