@@ -3,15 +3,15 @@ LIBS = -lpcre
 CFLAGS = -Wall -O3
 COMPILE = $(CC) $(CFLAGS) -c
 ALL_OBJFILES = $(patsubst %.cpp,%.o,$(wildcard *.cpp))
-OBJFILES := $(filter-out Extract.o Textify.o, $(ALL_OBJFILES))
+OBJFILES := $(filter-out Sentences.o Textify.o, $(ALL_OBJFILES))
 
-all: bin/textify bin/extract
+all: bin/textify bin/sentences
 
 bin/textify: $(OBJFILES) Textify.o
 	${CC} $(CFLAGS) -lpcre $(OBJFILES) Textify.o -lpcre -o bin/textify
 
-bin/extract: $(OBJFILES) Extract.o
-	${CC} $(CFLAGS) -lpcre $(OBJFILES) Extract.o -lpcre -o bin/extract
+bin/sentences: $(OBJFILES) Sentences.o
+	${CC} $(CFLAGS) -lpcre $(OBJFILES) Sentences.o -lpcre -o bin/sentences
 
 %.o: %.cpp
 	$(COMPILE) -o $@ $<

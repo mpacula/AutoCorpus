@@ -43,6 +43,9 @@ char SentenceExtractor::peek() {
 
 void SentenceExtractor::newline(int count) 
 {
+  if(output.size() == 0)
+    return;
+
   for(int i = output.size()-1; i >= 0 && output[i] == '\n'; i--, count--);  
 
   while(count-- > 0) {
