@@ -20,7 +20,7 @@ def save_article(article, directory):
 
 if __name__ == "__main__":
   try:
-    parser = OptionParser(usage="usage: articles.py -d output-directory input-file")
+    parser = OptionParser(usage="usage: %s -d output-directory input-file" % sys.argv[0])
     parser.add_option("-d",
                       action="store", type="string", dest="directory",
                       help="directory where to store the articles")
