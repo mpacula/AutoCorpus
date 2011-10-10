@@ -80,11 +80,11 @@ class WikiParser:
     elif name == "text":
       self.article.markup = contents
     elif name == "page":
-      if not (self.ignore_redirects and self.article.is_redirect):
+      if self.ignore_redirects and self.article.is_redirect:
         pass
-
-      self.new_article(self.article)
-      self.article = None
+      else:
+        self.new_article(self.article)
+        self.article = None
 
     # clean up state associated with the node    
     if len(self.enclosing_tags) > 0 and name == self.enclosing_tags[0]:
