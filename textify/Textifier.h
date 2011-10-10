@@ -51,6 +51,8 @@ private:
   pcre* re_comment;
 
 public:
+  bool ignoreHeadings;
+
   Textifier();
   ~Textifier();
   char* textify(const char* markup, const int markup_len,

@@ -22,6 +22,8 @@ char* substr(char* dest, const char* src, int start, int len, int n)
 
 Textifier::Textifier()
 {  
+  ignoreHeadings = false;
+
   // Compile all the regexes we'll need
   re_format  = make_pcre("^(''+)(.*?)(\\1|\n)", 0);
   re_heading = make_pcre("^(=+)\\s*(.+?)\\s*\\1", 0);
@@ -232,21 +234,35 @@ void Textifier::do_link()
 void Textifier::do_heading() 
 {
   if(!match(string("heading"), re_heading))
-  {
-    // Not really a heading. Just copy to output.
-    state.out[state.pos_out++] = state.markup[state.pos++];      
-    return;
+    {
+      // Not really a heading. Just copy to output.
+      state.out[state.pos_out++] = state.markup[state.pos++];      
+      return;
+    }
+  if(ignoreHeadings)
+    skip_match();
+  else if(state.groups[2] == "References") {
+    state.pos = state.N;
   }
-  append_group_and_skip(2);
+  else {
+    append_group_and_skip(2);
+
+    if(!starts_with("\n\n")) {
+      state.out[state.pos_out++] = '\n';
+      if(!starts_with("\n"))
+        state.out[state.pos_out++] = '\n';
+    }    
+  }
 }
 
 void Textifier::do_tag()
 {
   int level = 0;
   bool closed = false;
-
+  string tag;
   do {
     char ch = state.markup[state.pos];
+    tag += ch;
     switch(ch) {
     case '<':
       level++;
@@ -260,9 +276,12 @@ void Textifier::do_tag()
       closed = (level == 1); // we must be inside the right closing tag
       break;
     }    
-
     state.pos++;
   } while((level > 0 || !closed) && state.pos < state.N);
+  
+  if(tag == "<br>" || tag == "<br/>" || tag == "<br />") {
+    state.out[state.pos_out++] = '\n';
+  }
 }
 
 void Textifier::do_comment()
@@ -363,12 +382,7 @@ char* Textifier::textify(const char* markup, const int markup_len,
     else if(starts_with("''"))
       do_format();
     else {
-      if(state.pos_out == 0 ||
-         state.out[state.pos_out-1] != state.markup[state.pos] ||
-         state.markup[state.pos] != '\n')
-        out[state.pos_out++] = state.markup[state.pos++];
-      else
-        state.pos++;
+      out[state.pos_out++] = state.markup[state.pos++];
     }
   }
 

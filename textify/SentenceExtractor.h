@@ -16,6 +16,8 @@ class SentenceExtractor
   std::string output;
   ExtractorOptions opts;
 
+  bool out_ends_with(const char*);
+
   char last_written_char();
   char peek();
   bool is_last_written_char(const char*);

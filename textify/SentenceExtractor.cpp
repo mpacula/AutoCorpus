@@ -53,6 +53,11 @@ void SentenceExtractor::newline(int count)
   }
 }
 
+bool SentenceExtractor::out_ends_with(const char* suffix)
+{
+  return output.find(suffix, output.size()-strlen(suffix)) != string::npos;
+}
+
 string SentenceExtractor::extract(const char* input) 
 {
   this->input = input;
@@ -65,20 +70,22 @@ string SentenceExtractor::extract(const char* input)
     const char ch = input[pos];
     switch(ch) {
     case '\n':
-      if(opts.separateParagraphs) {
+      if(peek() == '\n' && opts.separateParagraphs) {
         newline(2);
+        pos++;
       }
       break;
       
     case '.':
       output += ch;
-      if(is_ws(peek())) {
+      if(is_ws(peek()) && !out_ends_with("e.g.") && !out_ends_with("i.e.")) {
         newline(1);
       }
       break;
 
     case '?':
     case '!':
+      output += ch;
       newline(1);
       break;      
 
