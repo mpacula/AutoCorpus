@@ -20,6 +20,7 @@ class SentenceExtractor
 
   char last_written_char();
   char peek();
+  char peek(size_t n);
   bool is_last_written_char(const char*);
   bool is_ws(char);
   void newline(int);

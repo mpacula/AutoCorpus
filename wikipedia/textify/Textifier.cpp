@@ -200,7 +200,7 @@ void Textifier::append_group_and_skip(int group)
 
 void Textifier::do_link() 
 {
-  int start, end, next;
+  int start = 0, end = 0, next = 0;
   if(get_link_boundaries(start, end, next)) {
     char contents[end-start+1];
     substr(contents, state.markup, start, end-start, state.N);

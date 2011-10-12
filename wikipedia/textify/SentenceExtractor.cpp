@@ -41,6 +41,12 @@ char SentenceExtractor::peek() {
   return input[pos+1];
 }
 
+char SentenceExtractor::peek(size_t n) {
+  size_t i = 0;
+  while(input[pos + i] != '\0' && ++i < n);
+  return i == n ? input[pos+i] : '\0';
+}
+
 void SentenceExtractor::newline(int count) 
 {
   if(output.size() == 0)
@@ -78,8 +84,18 @@ string SentenceExtractor::extract(const char* input)
       
     case '.':
       output += ch;
-      if(is_ws(peek()) && !out_ends_with("e.g.") && !out_ends_with("i.e.")) {
-        newline(1);
+      if(is_ws(peek()) &&
+	 !out_ends_with("e.g.") &&
+	 !out_ends_with("i.e.")) {
+	if(peek(3) == '.') { // One letter "sentence": most likely an abbreviation
+	  output += input[pos+1];
+	  output += input[pos+2];
+	  output += input[pos+3];
+          pos += 3;
+	}
+	else {
+	  newline(1);
+	}
       }
       break;
 
