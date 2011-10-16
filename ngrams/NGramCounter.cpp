@@ -313,7 +313,7 @@ vector<string>* NGramCounter::ngrams(const string line, vector<string>* ngrams)
 
 void printUsage(const char* name)
 {
-  printf("Usage: %s [-n NUMBER] [-m LIMIT]\n", name);
+  printf("Usage: %s [-n NUMBER] [-m LIMIT] [-v]\n", name);
 }
 
 int main(int argc, const char** argv)
@@ -338,6 +338,9 @@ int main(int argc, const char** argv)
         break;
       case 'm':
         multiplier = 1024*1024;
+        break;
+      case 'g':
+        multiplier = 1024*1024*1024;
         break;
       case'\0':
         multiplier = 1;

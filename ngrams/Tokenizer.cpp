@@ -5,7 +5,7 @@
 #include <iostream>
 #include <string>
 
-#define PUNCTUATION ".,!?()&@()[]{}/\\\"'#-:;<>^”*="
+#define PUNCTUATION ".,!?()&@()[]{}/\\\"'#:;<>^”*=-−—"
 
 using namespace std;
 
@@ -14,9 +14,13 @@ class Tokenizer
 private:
   const char* keep; // punctuation to include in output  
   bool includeParens;
+  char lastChar;
   
   inline bool isPunctuation(char ch) 
   {
+    if(ch == '\'')
+      return isWS(lastChar);
+
     return strchr(PUNCTUATION, ch);
   }
 
@@ -29,11 +33,26 @@ private:
   {
     return strchr(" \t\r\n\f", ch);
   }
+
+  inline void space()
+  {
+    if(!isWS(lastChar)) {
+      fputc(' ', stdout);
+      lastChar = ' ';
+    }
+  }
+
+  inline void character(char ch)
+  {
+    fputc(ch, stdout);
+    lastChar = ch;
+  }
   
 public:
   Tokenizer(const char* keep, bool includeParens) {
     this->keep = keep;
     this->includeParens = includeParens;
+    this->lastChar = '\0';
   }
 
   void tokenize(string input) {
@@ -46,7 +65,9 @@ public:
         if(!includeParens) // skip over the '('
           continue;
         else {
-          fputs("( ", stdout);
+          space();
+          character('(');
+          space();
           continue;
         }
         break;
@@ -55,7 +76,9 @@ public:
         if(!includeParens) // skip over the ')'
           continue;
         else {
-          fputs(") ", stdout);
+          space();
+          character(')');
+          space();
           continue;
         }
         break;
@@ -63,15 +86,21 @@ public:
       
       if(parenLevel == 0 || includeParens) {
         if(isWS(ch))
-          fputs(" ", stdout);
-        else if(isPunctuation(ch) && isKeep(ch))
-          printf(" %c ", ch);
+          space();
+        else if(isPunctuation(ch) && isKeep(ch)) {
+          space();
+          character(ch);
+          space();
+        }
+        else if(isPunctuation(ch)) {
+          space();
+        }
         else if(!isPunctuation(ch))
-          fputc(tolower(ch), stdout);
+          character(tolower(ch));
       }
     }
 
-    puts("");
+    character('\n');
   } // end of tokenize()
 };
 
