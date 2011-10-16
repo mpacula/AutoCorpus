@@ -3,6 +3,7 @@
 #include <iostream>
 #include "string.h"
 #include "NGramCounter.h"
+#include "utilities.h"
 
 #define SEPARATOR '\t'
 
@@ -18,7 +19,7 @@ bool isAllWhitespace(string str)
   return true;
 }
 
-NGramCounter::NGramCounter(const int n, const size_t maxChunkSize) {
+NGramCounter::NGramCounter(const int n, const size_t maxChunkSize, const bool verbose) {
   this->n = n;
   this->closed = false;
   this->maxChunkSize = maxChunkSize;
@@ -32,6 +33,7 @@ NGramCounter::NGramCounter(const int n, const size_t maxChunkSize) {
   this->chunkLength = 0;
   this->currentCounts.rehash(this->maxChunkLength / 6);
   this->totalCount = 0;
+  this->verbose = verbose;
 }
 
 NGramCounter::~NGramCounter()
@@ -42,6 +44,8 @@ void NGramCounter::endChunk()
 {
   // Create chunk file and write out the ngrams
   FILE* chunkFile = tmpfile();
+  if(chunkFile == NULL)
+    throw string("ERROR: could not create chunk file. Possibly too many chunks? Try increasing chunk size.");
   
   for(set<string>::iterator it = sortedNGrams.begin(); it != sortedNGrams.end(); it++) {
     string ngram = *it;
@@ -57,6 +61,16 @@ void NGramCounter::endChunk()
   chunkLength = 0;
   
   chunkFiles.push_back(chunkFile);
+
+  if(chunkFiles.size() >= 3) {
+    // This ensures we have at most 3 chunks at any time.
+    // This is because an excessive number of chunks can strain
+    // system resources, and calls to tmpfile might fail.
+    FILE* merged = mergeChunks(chunkFiles[0], chunkFiles[1], false);
+    chunkFiles.erase(chunkFiles.begin()+1);
+    chunkFiles.erase(chunkFiles.begin());
+    chunkFiles.push_back(merged);
+  }
 }
 
 void NGramCounter::count(const string line)
@@ -77,16 +91,6 @@ void NGramCounter::count(const string line)
   if(chunkLength > maxChunkLength) {
     endChunk();
   }
-}
-
-char* deconstructNGram(const char* str, char* ngram, long* count) {
-  const char* delim = strchr(str, SEPARATOR);
-  if(delim == NULL)
-    return NULL;
-
-  strncpy(ngram, str, (size_t)(delim-str));
-  sscanf(&delim[1], "%ld", count);
-  return ngram;
 }
 
 void NGramCounter::printOnlyChunk()
@@ -139,10 +143,11 @@ FILE* NGramCounter::mergeChunks(FILE* chunk1, FILE* chunk2, bool last)
   char* ngram1 = new char[buf_size];
   char* ngram2 = new char[buf_size];
   long c1=0, c2=0, c_total=0;
-  while(true) {
-    line1 = fgets(line1, buf_size, chunk1);
-    line2 = fgets(line2, buf_size, chunk2);
 
+  line1 = fgets(line1, buf_size, chunk1);
+  line2 = fgets(line2, buf_size, chunk2);
+  while(true) {
+    
     /* Both lines nonempty */
     if(line1 != NULL && line2 != NULL) {
 
@@ -150,24 +155,32 @@ FILE* NGramCounter::mergeChunks(FILE* chunk1, FILE* chunk2, bool last)
         cerr << "WARNING: Could not deconstruct ngram when merging chunks. Lines (chunk 1 and chunk 2): " << endl;
         cerr << line1;
         cerr << line2;
+        // TODO: skip lines (call fgets)
         continue;
       }
-      c_total+=(c1+c2);
 
       int cmp = strcmp(ngram1, ngram2);
       /* ngrams from both chunks equal: add counts */
       if(cmp == 0) {
         fprintf(mergedFile, "%s%c%ld\n", ngram1, SEPARATOR, c1+c2);
+        line1 = fgets(line1, buf_size, chunk1);
+        line2 = fgets(line2, buf_size, chunk2);
+        c_total+=(c1+c2);
+        continue;
       }
-      /* ngram from first chunk is smaller: write 1st and 2nd chunk's ngram, in that order */
+      /* ngram from first chunk is smaller */
       else if(cmp < 0) {
         fputs(line1, mergedFile);
-        fputs(line2, mergedFile);
+        line1 = fgets(line1, buf_size, chunk1);
+        c_total += c1;
+        continue;
       }
-      /* ngram from second chunk is smaller: write 2nd and 1st chunk's ngram, in that order */
+      /* ngram from second chunk is smaller */
       else {
         fputs(line2, mergedFile);
-        fputs(line1, mergedFile);
+        line2 = fgets(line2, buf_size, chunk2);
+        c_total += c2;
+        continue;
       }
     }
     /* Only first line nonempty */
@@ -179,6 +192,7 @@ FILE* NGramCounter::mergeChunks(FILE* chunk1, FILE* chunk2, bool last)
         c_total += c1;
         fputs(line1, mergedFile);
       }
+      line1 = fgets(line1, buf_size, chunk1);
     }
     /* Only second line nonempty */
     else if(line2 != NULL) {
@@ -189,6 +203,7 @@ FILE* NGramCounter::mergeChunks(FILE* chunk1, FILE* chunk2, bool last)
         c_total += c2;
         fputs(line2, mergedFile);
       }
+      line2 = fgets(line2, buf_size, chunk2);
     }
     else
       break;
@@ -202,6 +217,9 @@ FILE* NGramCounter::mergeChunks(FILE* chunk1, FILE* chunk2, bool last)
   }
   else if(!last)
     rewind(mergedFile);
+
+  if(verbose)
+    cerr << "Merge complete. ngrams: " << c_total << endl;
 
   delete[] line1;
   delete[] line2;
@@ -221,7 +239,8 @@ void NGramCounter::mergeAll()
 
   // pairwise merge until two chunks remain
   while(chunkFiles.size() > 2) {
-    //cout << "Merge one level. Start no. chunks: " << chunkFiles.size() << endl;
+    if(verbose)
+      cerr << "Merge one level. Start no. chunks: " << chunkFiles.size() << endl;
 
     vector<FILE*> newChunks;
     newChunks.reserve(chunkFiles.size());
@@ -299,8 +318,9 @@ void printUsage(const char* name)
 
 int main(int argc, const char** argv)
 {
-  size_t chunkSize = 200*1024*1024;
+  size_t chunkSize = 500*1024*1024;
   int n = 2;
+  bool verbose = false;
   for(int i=1; i<argc; i++) {
     if(strcmp("-m", argv[i]) == 0 && i<argc-1) {
       long size = 100*1024*1024;
@@ -334,6 +354,9 @@ int main(int argc, const char** argv)
       n = atoi(argv[i+1]);
       i++;
     }
+    else if(strcmp("-v", argv[i]) == 0) {
+      verbose = true;
+    }
     else {
       printUsage(argv[0]);
       return 1;
@@ -349,7 +372,7 @@ int main(int argc, const char** argv)
     return 1;
   }
 
-  NGramCounter counter(n, chunkSize);
+  NGramCounter counter(n, chunkSize, verbose);
 
   string line;
   try {

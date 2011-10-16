@@ -1,10 +1,11 @@
 /** Splits input into tokens (words) */
 
 #include <string.h>
+#include <ctype.h>
 #include <iostream>
 #include <string>
 
-#define PUNCTUATION ".,!?()&@()[]{}/\\\""
+#define PUNCTUATION ".,!?()&@()[]{}/\\\"'#-:;<>^”*="
 
 using namespace std;
 
@@ -66,7 +67,7 @@ public:
         else if(isPunctuation(ch) && isKeep(ch))
           printf(" %c ", ch);
         else if(!isPunctuation(ch))
-          fputc(ch, stdout);
+          fputc(tolower(ch), stdout);
       }
     }
 

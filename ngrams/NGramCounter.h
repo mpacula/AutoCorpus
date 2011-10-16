@@ -16,6 +16,7 @@ class NGramCounter
   std::vector<std::string> lineNGrams;
   int n; // desired number of words in an ngram
   bool closed;  
+  bool verbose;
   long totalCount;
   size_t maxChunkSize; // in bytes, including auxiliary data structures
   size_t maxChunkLength; // in characters, w/o auxiliary data structures
@@ -32,7 +33,7 @@ class NGramCounter
   std::vector<std::string>* ngrams(std::string line, std::vector<std::string>*);
   
  public:
-  NGramCounter(const int, const size_t);
+  NGramCounter(const int, const size_t, const bool);
   ~NGramCounter();
   void count(std::string line);  
   void close();
