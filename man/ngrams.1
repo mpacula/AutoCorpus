@@ -1,0 +1,78 @@
+.TH ngrams 1 "October 16, 2011" "version 1.0" "USER COMMANDS"
+.SH NAME
+ngrams \- extract n-grams from a list of sentences.
+
+.SH SYNOPSIS
+.B ngrams [-n NUMBER] [-m LIMIT] [-v]
+
+.SH DESCRIPTION 
+The ngrams utility reads a list of sentences from standard
+input and extracts n-gram counts. The counts are printed to standard
+output in the following format:
+
+.nf
+<sum of counts>
+word1 ... wordn    C
+word1 ... wordn    C
+      ...
+.fi
+
+where words are delimited by spaces and the count 'C' is delimited
+by a tab character. Each ngram is printed on a separate line and all
+ngrams are unique.
+
+The special words <s> and </s> denote start and end of sentences,
+respectively.
+
+.PP 
+ngrams is designed to work with very large files using constant
+memory, where the memory limit can be specified by the user. While the
+more memory the better, ngrams is capable of processing tens of gigabytes of
+data using only a few megabytes of RAM (a disk cache is used for
+auxiliary storage).
+
+.SH OPTIONS
+.TP
+\-n NUMBER
+specify the number of words per ngram: 1 for unigrams, 2 for bigrams etc.
+
+.TP
+\-m LIMIT 
+specify the maximum amount of memory (bytes) that ngrams can use for
+processing. LIMIT has to be an integer optionally followed by one of the
+following multiplier suffixes: b 512, k 1024, m 1024*1024, g 1024*1024*1024.
+The default value is 500M. Very small values may have negative effect
+on performance.
+
+The value of LIMIT does not affect the maximum size of datasets that ngrams 
+can process: it is possible, though not recommended, to process gigabytes
+of data in a few megabytes of memory.
+
+The actual memory used by ngrams will be equal to c*LIMIT, where c
+is a small system-dependent constant. Hence it is possible for ngrams
+to run out of memory even if LIMIT is less than the total amount of
+available RAM. In such cases, decrease LIMIT.
+
+.TP
+\-v
+turns on verbose mode. Intended for debugging only.
+
+
+.SH EXAMPLES
+.TP
+Command:
+echo -e "this is a test\\nthis is yet another test" | ngrams -n 2
+.nf
+.TP
+Output:
+11
+<s> this	2
+a test	1
+another test	1
+is a	1
+is yet	1
+test </s>	2
+this is	2
+yet another	1
+.fi
+
