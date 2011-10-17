@@ -1,0 +1,33 @@
+.TH sentences 1 "October 16, 2011" "version 1.0" "USER COMMANDS"
+.SH NAME
+sentences \- splits text into separate sentences deimited by newlines.
+
+.SH SYNOPSIS
+.B sentences
+
+.SH DESCRIPTION 
+The 'sentences' utility splits input into separate sentences delimited
+by newlines. If sentences are delimited by more than one line in the
+input, they will be delimited by exactly two in the output.
+
+Single-line page feed characters (C character '\\f') are preserved in
+the output. Input must end with a '\\f'.
+
+.SH EXAMPLES
+.TP
+Command:
+echo -e "Hello, world! - Hello to you too.\\n\\nThis is a new paragraph.\\n\\f" | ../wikipedia/textify/bin/sentences 
+.nf
+
+.fi
+.TP
+Output:
+.nf
+Hello, world!
+- Hello to you too.
+
+This is a new paragraph.
+
+
+^L
+.fi

@@ -9,34 +9,35 @@ extract \- extract articles from a Wikipedia XML database.
 The extract utility reads a Wikipedia XML database of articles from
 standard input and extracts MediaWiki markup for each article. The
 output is printed to standard output, or, if the \-d parameter is
-specified, to separate files in a directory.
+specified, to files in a directory.
 
 .PP
 extract can work with very large databases (tens of gigabytes) without
 running our of memory.
 
+.PP 
+If output directory is not specified, articles are printed to standard
+output and delimited by page feeds (C character '\\f').
+
 .SH OPTIONS
 .TP
-\-n NUMBER
-specify the number of words per ngram: 1 for unigrams, 2 for bigrams etc.
+\-d the otuput directory
+If set, articles will be saved in the directory with each article in a
+separate file. The files will be named after the articles.
 
+.SH EXAMPLES
 .TP
-\-m LIMIT 
-specify the maximum amount of memory (bytes) that ngrams can use for
-processing. LIMIT has to be an integer optionally followed by one of the
-following multiplier suffixes: b 512, k 1024, m 1024*1024, g 1024*1024*1024.
-The default value is 500M. Very small values may have negative effect
-on performance.
-
-The value of LIMIT does not affect the maximum size of datasets that ngrams 
-can process: it is possible, though not recommended, to process gigabytes
-of data in a few megabytes of memory.
-
-The actual memory used by ngrams will be equal to c*LIMIT, where c
-is a small system-dependent constant. Hence it is possible for ngrams
-to run out of memory even if LIMIT is less than the total amount of
-available RAM. In such cases, decrease LIMIT.
-
+Command:
+.nf
+cat ../wikipedia/data/enwiki-20110620-pages-articles.xml | extract
+.fi
 .TP
-\-v
-turns on verbose mode. Intended for debugging only.
+Output (truncated):
+.nf
+{{Redirect|Anarchist|the fictional character|Anarchist (comics)}}
+{{Redirect|Anarchists}}
+{{Good article}}
+{{pp-move-indef}}
+{{Anarchism sidebar}}
+\'\'\'Anarchism\'\'\' is a [[political philosophy]] 
+.fi

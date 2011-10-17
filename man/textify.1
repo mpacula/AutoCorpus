@@ -1,0 +1,41 @@
+.TH textify 1 "October 16, 2011" "version 1.0" "USER COMMANDS"
+.SH NAME
+textify \- transform MediaWiki markup into plaintext.
+
+.SH SYNOPSIS
+.B textify [-h, --ignore-headings]
+
+.SH DESCRIPTION 
+textify takes MediaWiki input from standard input and outputs
+plaintext, ignoring all metadata, tables, comments and other
+formatting.
+
+All input articles must be followed by a '\\f' (page feed) character,
+and they will also be so delimited in the output.
+
+In the output, paragraphs and headings are delimited by two
+linesbreaks. Sentences within paragraphs are either on the same line
+or separated by a single linebreak.
+
+.SH OPTIONS
+.TP
+\-h, \-\-ignore-headings
+If set, headings will be ignored in the output.
+
+.SH EXAMPLES
+
+.TP
+Command:
+.nf
+echo -e "==Test section==\\n''This is a test'' of converting\\
+ [markup|MediaWiki] markup into [plaintext]\\n\\f" | textify 
+.fi
+.TP
+Output:
+.nf
+Test section
+
+This is a test of converting MediaWiki markup into plaintext
+^L
+.fi
+

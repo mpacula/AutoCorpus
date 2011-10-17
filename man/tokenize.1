@@ -1,0 +1,56 @@
+.TH tokenize 1 "October 16, 2011" "version 1.0" "USER COMMANDS"
+.SH NAME
+tokenize \- transform sentences into space-delimited words while
+ignoring punctuation.
+
+.SH SYNOPSIS
+.B extract [--keep CHARACTERS] [--parens]
+
+.SH DESCRIPTION 
+The tokenize utility transforms sentences into space-delimited words
+(tokens), while ignoring punctuation. Sentences are read from standard
+input, assumed to be delimited by line breaks, and outputted to
+standard output also delimited by line breaks.
+
+extract ignores text in parentheses unless otherwise specified (see
+the \-\-parens option).
+
+All output is downcased.
+
+.SH OPTIONS
+.TP
+\-\-keep CHARACTERS 
+specifies punctuation characters that should *not*
+be ommitted. Any characters specified in this argument will appear as
+separate tokens in the output.
+
+.TP
+\-\-parens
+if present, text inside parentheses will *not* be ignored, and
+parentheses will appear as separate tokens in the output.
+
+.SH EXAMPLES
+.TP
+Command:
+.nf
+echo "An Introduction to Natural Language Processing, \\
+Computational Linguistics, and Speech Recognition \\
+(a book by Jurafsky and Martin)" | tokenize 
+.fi
+.TP
+Output:
+an introduction to natural language processing computational linguistics and speech recognition 
+
+.TP
+Command:
+.nf
+echo "An Introduction to Natural Language Processing, \\
+Computational Linguistics, and Speech Recognition \\
+(a book by Jurafsky and Martin)" | tokenize --keep "," --parens
+.fi
+.TP
+Output:
+an introduction to natural language processing , \
+computational linguistics , and speech recognition ( a book by jurafsky and martin ) 
+
+
