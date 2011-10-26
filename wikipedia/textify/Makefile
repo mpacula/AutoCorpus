@@ -5,7 +5,10 @@ COMPILE = $(CC) $(CFLAGS) -c
 ALL_OBJFILES = $(patsubst %.cpp,%.o,$(wildcard *.cpp))
 OBJFILES := $(filter-out Sentences.o Textify.o, $(ALL_OBJFILES))
 
-all: bin/textify bin/sentences
+all: tags bin/textify bin/sentences
+
+tags: $(wildcard *.cpp)
+	etags $(wildcard *.cpp)
 
 bin/textify: $(OBJFILES) Textify.o
 	${CC} $(CFLAGS) -lpcre $(OBJFILES) Textify.o -lpcre -o bin/textify
@@ -17,4 +20,4 @@ bin/sentences: $(OBJFILES) Sentences.o
 	$(COMPILE) -o $@ $<
 
 clean:
-	rm -f *.o bin/*
+	rm -f *.o bin/* TAGS
