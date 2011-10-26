@@ -29,4 +29,11 @@ int main(int argc, char** argv)
       input += "\n";
     }
   }  
+
+  if(input.length() > 0) {
+    string output = extractor.extract(input.c_str());
+    cout << output << endl;
+    cout << "\f" << endl;
+    input.clear();
+  }
 }
