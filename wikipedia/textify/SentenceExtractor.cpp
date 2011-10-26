@@ -80,6 +80,9 @@ string SentenceExtractor::extract(const char* input)
         newline(2);
         pos++;
       }
+      else if(!is_last_written_char(" \t")) {
+        output += ' ';
+      }
       break;
       
     case '.':
