@@ -125,7 +125,6 @@ void NGramCounter::printOnlyChunk()
 
 FILE* NGramCounter::mergeChunks(FILE* chunk1, FILE* chunk2, bool last)
 {
-  //cout << "Merging chunks " << chunk1 << " and " << chunk2 << endl;
   FILE* mergedFile;
   if(last) {
     printf("%ld\n", totalCount);
@@ -254,7 +253,6 @@ void NGramCounter::mergeAll()
       newChunks.push_back(chunkFiles[chunkFiles.size()-1]);
 
     chunkFiles = newChunks;
-    // cout << "End no. chunks: " << chunkFiles.size() << endl;
   }
 
   // At this point we only have two chunks: just print them out,
