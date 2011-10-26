@@ -3,8 +3,9 @@
 
 #include <pcre.h>
 #include <string>
+#include <stack>
 
-typedef struct _State
+typedef struct _state
 {
   size_t           N;          // input length
   size_t           pos;        // current position within input
@@ -15,11 +16,32 @@ typedef struct _State
   std::string      groups[10]; // stores regexp matches
 } State;
 
+struct Error
+{
+  std::string message;
+  size_t pos;
+
+  Error(std::string message, size_t pos)
+  {
+    this->message = message;
+    this->pos = pos;
+  }
+
+  Error offset(long delta_pos)
+  {
+    return Error(message, pos+delta_pos);
+  }
+};
+
 class Textifier 
 {
 private:
   State state;
+  std::stack<State> stateStack;
+  std::string errorContext;
 
+  std::string get_snippet(size_t pos);
+  
   bool starts_with(std::string& str);
   bool starts_with(const char* str);
   const char* get_remaining();
@@ -27,6 +49,7 @@ private:
   void skip_match();
   void skip_line();
   void append_group_and_skip(int group);
+  void newline(int count);
 
   void do_link();
   void do_format();
@@ -55,11 +78,10 @@ public:
 
   Textifier();
   ~Textifier();
-  char* textify(const char* markup, const int markup_len,
-                char* out, const int out_len);
+  int textify(const char* markup, const int markup_len,
+              char* out, const int out_len);
 
-  void find_location(long& line, long& col);
-  std::string get_snippet();
+  std::string get_error_context();
 };
 
 #endif // Textifier_h

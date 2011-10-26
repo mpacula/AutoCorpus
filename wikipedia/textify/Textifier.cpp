@@ -12,12 +12,38 @@ using namespace std;
 char* substr(char* dest, const char* src, int start, int len, int n) 
 {
   if(start >= n)
-    throw string("Start index outside of string.");
+    throw Error("Start index outside of string.", start);
 
   int actual_length = min(len, n-start);
   strncpy(dest, &src[start], actual_length);
   dest[actual_length] = '\0';
   return dest;
+}
+
+bool is_prefix(const char* str, const char* sub, const size_t n)
+{
+  size_t i = 0;
+  while(sub[i] != '\0' &&
+        i < n) {
+    if(str[i] != sub[i])
+      return false;
+    i++;
+  }
+  return i == strlen(sub);
+}
+
+bool is_substr(const char* str, const char* substr, int n)
+{
+  const int m = strlen(substr);
+  while(m <= n) {
+    if(is_prefix(str, substr, n))
+      return true;
+
+    str = &str[1];
+    n--;
+  }
+  
+  return false;
 }
 
 Textifier::Textifier()
@@ -28,6 +54,11 @@ Textifier::Textifier()
   re_format  = make_pcre("^(''+)(.*?)(\\1|\n)", 0);
   re_heading = make_pcre("^(=+)\\s*(.+?)\\s*\\1", 0);
   re_comment = make_pcre("<!--.*?-->", PCRE_MULTILINE | PCRE_DOTALL);
+
+  state.markup = NULL;
+  state.out = NULL;
+  state.pos = state.pos_out = 0;
+  state.N = state.M = 0;
 }
 
 Textifier::~Textifier()
@@ -47,7 +78,7 @@ pcre* Textifier::make_pcre(const char* expr, int options)
     ostringstream os;
     os << "PCRE compilation failed at offset " << erroffset << ": "
        << error << endl;
-    throw string(os.str());
+    throw Error(os.str(), state.pos);
   }
   return re;
 }
@@ -71,7 +102,7 @@ bool Textifier::get_link_boundaries(int& start, int& end, int& next)
 
     case '|':
       if(level == 1) { // does the pipe belong to current link or a nested one?
-        start = i+1;
+        start = i+1;   // level 1 means current
         end = start;
       }
       break;
@@ -89,18 +120,8 @@ bool Textifier::get_link_boundaries(int& start, int& end, int& next)
   return level == 0; // if 0, then brackets match and this is a correct link  
 }
 
-void Textifier::find_location(long& line, long& column)
-{
-  line = 1;
-  column = 0;
-  for(size_t i = 0; i <= state.pos && i < state.N; i++) {
-    if(state.markup[i] == '\n') {
-      line++;
-      column = 0;
-    }
-    else
-      column++;
-  }
+string Textifier::get_error_context() {
+  return errorContext;
 }
 
 bool Textifier::starts_with(string& str)
@@ -110,31 +131,21 @@ bool Textifier::starts_with(string& str)
 
 bool Textifier::starts_with(const char* str)
 {
-  if(state.N-state.pos < strlen(str))
-    return false;
-
-  size_t i = state.pos;
-  size_t j = 0;
-  while(str[j] != '\0' &&
-        i < state.N) {
-    if(state.markup[i] != str[j])
-      return false;
-
-    i++;
-    j++;
-  }
-  return j == strlen(str);
+  return is_prefix(&state.markup[state.pos], str, state.N-state.pos);
 }
 
-string Textifier::get_snippet()
+string Textifier::get_snippet(size_t pos)
 {
+  if(pos >= state.N)
+    return "n/a";
+
   char snippet[30];
-  strncpy(snippet, get_remaining(), 30);
+  strncpy(snippet, &state.markup[pos], 30);
   
-  const size_t snippet_len = min((size_t)29, state.N-state.pos);
+  const size_t snippet_len = min((size_t)29, state.N-pos);
   snippet[snippet_len] = '\0';
 
-  if(snippet_len < state.N - state.pos)
+  if(snippet_len < state.N - pos)
     strncpy(&snippet[snippet_len-3], "...", 3); 
 
   return string(snippet);
@@ -156,7 +167,7 @@ string* Textifier::match(string name, pcre* regexp)
   if(rc == PCRE_ERROR_NOMATCH || rc == 0)
     return NULL;
   else if(rc < 0)
-    throw get_err(name);
+    throw Error(get_err(name), state.pos);
 
   // from pcredemo.c
   for(int i = 0; i < rc; i++) {
@@ -204,25 +215,36 @@ void Textifier::do_link()
   if(get_link_boundaries(start, end, next)) {
     char contents[end-start+1];
     substr(contents, state.markup, start, end-start, state.N);
+
+    // is this a file link? if so, put it in its own paragraph
+    const bool fileLink = is_substr(&state.markup[state.pos], "File:", start-state.pos);
+    if(fileLink) {
+      newline(2);
+    }
     
-    State state_copy = state;
+    size_t recursive_bytes_written = 0;
     try {
-      textify(contents, end-start, &state.out[state.pos_out], state.M-state.pos_out);
+      recursive_bytes_written = textify(contents, end-start,
+                                        &state.out[state.pos_out],
+                                        state.M-state.pos_out);
     } 
-    catch(string error) {
-      state_copy.pos = start + state.pos; // move the pointer to where recursive call failed
-      state = state_copy;
-      throw error;
+    catch(Error error) {
+      // offset error location by the beginning of the recursive call
+      throw error.offset(start);
     }
 
-    if(strchr(state.out, ':') == NULL) {
+    if(strchr(&state.out[state.pos_out], ':') == NULL) {
       // This is *not* a link to the page in a different language.
-      // Otherwise we ignore it.
-      state_copy.pos_out += state.pos_out;
+      // (otherwise we ignore it by not moving the out pointer, so its
+      // contents get overwritten)
+      state.pos_out += recursive_bytes_written;
     }
 
-    state_copy.pos = next;
-    state = state_copy;
+    state.pos = next;
+
+    if(fileLink) {
+      newline(2);
+    }
   } else {
     // Apparently mediawiki allows unmatched open brackets...
     // If that's what we got, it's not a link.
@@ -239,19 +261,17 @@ void Textifier::do_heading()
       state.out[state.pos_out++] = state.markup[state.pos++];      
       return;
     }
-  if(ignoreHeadings)
-    skip_match();
-  else if(state.groups[2] == "References") {
+  else if(state.groups[2] == "References" ||
+          state.groups[2] == "Footnotes" ||
+          state.groups[2] == "Related pages" ||
+          state.groups[2] == "Further reading") {
     state.pos = state.N;
   }
+  else if(ignoreHeadings)
+    skip_match();
   else {
     append_group_and_skip(2);
-
-    if(!starts_with("\n\n")) {
-      state.out[state.pos_out++] = '\n';
-      if(!starts_with("\n"))
-        state.out[state.pos_out++] = '\n';
-    }    
+    newline(2);    
   }
 }
 
@@ -287,7 +307,7 @@ void Textifier::do_tag()
 void Textifier::do_comment()
 {
   if(!match(string("comment"), re_comment))  
-    throw get_err("comment");
+    throw Error(get_err("comment"), state.pos);
 
   skip_match();
 }
@@ -312,6 +332,7 @@ void Textifier::do_format()
 
 void Textifier::do_list()
 {
+  newline(2);
   while(state.pos < state.N &&
         (state.markup[state.pos] == '*' ||
          state.markup[state.pos] == '-' ||
@@ -319,18 +340,47 @@ void Textifier::do_list()
          state.markup[state.pos] == '\t')) {
     state.pos++;
   }
+
+  int end_index = state.pos;
+  while(state.markup[end_index] != '\0' &&
+        state.markup[end_index] != '\n' &&
+        !is_prefix(&state.markup[end_index], "<!--", state.N-end_index)) {
+    end_index++;
+  }
+  
+  size_t item_length = end_index - state.pos;
+  size_t bytes_written = textify(&state.markup[state.pos], 
+          item_length,
+          &state.out[state.pos_out],
+          state.M-state.pos_out);
+  state.pos += item_length;
+  state.pos_out += bytes_written;
+
+  newline(2);
 }
 
 void Textifier::ignore_nested(string name, char open, char close) 
 {
   if(state.markup[state.pos] != open)
-    throw get_err(name);
+    throw Error(get_err(name), state.pos);
   
   int level = 0;
   do {
     if(state.markup[state.pos] == open)       level++;
     else if(state.markup[state.pos] == close) level--;
   } while(state.pos++ < state.N && level > 0);
+}
+
+void Textifier::newline(int count) 
+{
+  if(state.pos_out == 0)
+    return;
+
+  for(int i = state.pos_out-1; i >= 0 && state.out[i] == '\n'; i--, count--);  
+
+  while(count-- > 0) {
+    state.out[state.pos_out++] = '\n';
+  }
 }
 
 bool Textifier::at_line_start(const char* str, int pos) {
@@ -352,9 +402,11 @@ bool Textifier::at_line_start(const char* str, int pos) {
 
 /**
  * Converts state.markup to plain text. */
-char* Textifier::textify(const char* markup, const int markup_len,
-                         char* out, const int out_len)
+int Textifier::textify(const char* markup, const int markup_len,
+                       char* out, const int out_len)
 {
+  stateStack.push(state);
+
   this->state.N = markup_len;
   this->state.pos = 0;
   this->state.markup = markup;
@@ -362,31 +414,45 @@ char* Textifier::textify(const char* markup, const int markup_len,
   this->state.M = out_len;
   this->state.pos_out = 0;
 
-  while(state.pos < state.N && state.pos_out < state.M) {
-    if(starts_with("["))
-      do_link();
-    else if(starts_with("<!--"))
-      do_comment();
-    else if(starts_with("<"))
-      do_tag();
-    else if(starts_with("{{") || starts_with("{|"))
-      do_meta_box();
-    else if(starts_with("|") && at_line_start(state.markup, state.pos))
-      do_meta_pipe();
-    else if(at_line_start(state.out, state.pos_out) && (starts_with("*") || starts_with("-")))
-      do_list();
-    else if(at_line_start(state.out, state.pos_out) && starts_with(":"))
-      state.pos++;
-    else if(starts_with("="))
-      do_heading();
-    else if(starts_with("''"))
-      do_format();
-    else {
-      out[state.pos_out++] = state.markup[state.pos++];
+  if(state.markup == NULL)
+    throw Error("null markup", state.pos);
+  
+  try {
+    while(state.pos < state.N && state.pos_out < state.M) {      
+        if(starts_with("["))
+          do_link();
+        else if(starts_with("<!--"))
+          do_comment();
+        else if(starts_with("<"))
+          do_tag();
+        else if(starts_with("{{") || starts_with("{|"))
+          do_meta_box();
+        else if(starts_with("|") && at_line_start(state.markup, state.pos))
+          do_meta_pipe();
+        else if(at_line_start(state.out, state.pos_out) && (starts_with("*") || starts_with("-")))
+          do_list();
+        else if(at_line_start(state.out, state.pos_out) && starts_with(":"))
+          state.pos++;
+        else if(starts_with("="))
+          do_heading();
+        else if(starts_with("''"))
+          do_format();
+        else {
+          state.out[state.pos_out++] = state.markup[state.pos++];
+        }
+      }
     }
-  }
+    catch(Error err) {
+      errorContext = get_snippet(err.pos);
+      state = stateStack.top();
+      stateStack.pop();
+      throw err;
+    }
 
-  out[state.pos_out] = '\0';
+    out[state.pos_out] = '\0';
+    const size_t pos_out = state.pos_out;
 
-  return out;
+    state = stateStack.top();
+    stateStack.pop();
+    return pos_out;
 }

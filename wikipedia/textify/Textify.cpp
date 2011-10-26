@@ -14,6 +14,20 @@
 
 using namespace std;
 
+void find_location(const char* input, const size_t pos, long& line, long& column)
+{
+  line = 1;
+  column = 0;
+  for(size_t i = 0; i <= pos && input[i] != '\0'; i++) {
+    if(input[i] == '\n') {
+      line++;
+      column = 0;
+    }
+    else
+      column++;
+  }
+}
+
 void print_usage(char** argv) 
 {
   cerr << "Usage: " << argv[0] << " <stdin>" << endl;
@@ -34,23 +48,27 @@ int main(int argc, char** argv)
 
   string input;
   string line;
+  long article_start_index = 0, line_number = 0;
   while(getline(cin, line)) {
+    line_number++;
     if(line == "\f") { // end of article
       const int markup_len = input.size();
       char* plaintext = new char[2*markup_len+1];
       try {
-        cout << tf.textify(input.c_str(), markup_len, plaintext, markup_len) << endl;
+        tf.textify(input.c_str(), markup_len, plaintext, 2*markup_len);
+        cout << plaintext << endl;
         cout << '\f' << endl;
       }
-      catch(string err) {
+      catch(Error err) {
         long line;
         long column;
-        tf.find_location(line, column);
-        cerr << "ERROR (" << line << ":" << column << ")  " << err
-             << " at: " << tf.get_snippet() << endl;
+        find_location(input.c_str(), err.pos, line, column);
+        cerr << "ERROR (" << line+article_start_index << ":" << column << ")  " << err.message
+             << " at: " << tf.get_error_context() << endl;
       } 
-      delete plaintext;
+      delete[] plaintext;
       input.clear();
+      article_start_index = line_number+1;
     }
     else {
       input += line;
