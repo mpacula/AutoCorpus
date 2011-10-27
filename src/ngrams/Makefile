@@ -4,20 +4,24 @@ CFLAGS = -Wall -std=c++0x -O3
 COMPILE = $(CC) $(CFLAGS) -c
 ALL_OBJFILES = $(patsubst %.cpp,%.o,$(wildcard *.cpp))
 OBJFILES := $(filter-out NGramCounter.o Tokenizer.o Filter.o, $(ALL_OBJFILES))
+BIN = ../../bin
 
-all: ../bin/ngrams ../bin/tokenize ../bin/ngrams-freq-filter
+all: TAGS $(BIN)/ngrams $(BIN)/tokenize $(BIN)/ngrams-freq-filter
 
-../bin/ngrams: $(OBJFILES) NGramCounter.o
-	${CC} $(CFLAGS) $(LIBS) $(OBJFILES) NGramCounter.o -o ../bin/ngrams
+TAGS: $(wildcard *.cpp)
+	etags $(wildcard *.cpp)
 
-../bin/tokenize: $(OBJFILES) Tokenizer.o
-	${CC} $(CFLAGS) $(LIBS) $(OBJFILES) Tokenizer.o -o ../bin/tokenize
+$(BIN)/ngrams: $(OBJFILES) NGramCounter.o
+	${CC} $(CFLAGS) $(LIBS) $(OBJFILES) NGramCounter.o -o $(BIN)/ngrams
 
-../bin/ngrams-freq-filter: $(OBJFILES) Filter.o
-	${CC} $(CFLAGS) $(LIBS) $(OBJFILES) Filter.o -o ../bin/ngrams-freq-filter
+$(BIN)/tokenize: $(OBJFILES) Tokenizer.o
+	${CC} $(CFLAGS) $(LIBS) $(OBJFILES) Tokenizer.o -o $(BIN)/tokenize
+
+$(BIN)/ngrams-freq-filter: $(OBJFILES) Filter.o
+	${CC} $(CFLAGS) $(LIBS) $(OBJFILES) Filter.o -o $(BIN)/ngrams-freq-filter
 
 %.o: %.cpp Makefile
 	$(COMPILE) -o $@ $<
 
 clean:
-	rm -f *.o ../bin/ngrams ../bin/tokenize ../bin/ngrams-freq-filter
+	rm -f *.o TAGS $(BIN)/ngrams $(BIN)/tokenize $(BIN)/ngrams-freq-filte

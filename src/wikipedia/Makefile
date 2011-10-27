@@ -4,20 +4,24 @@ CFLAGS = -Wall -O3
 COMPILE = $(CC) $(CFLAGS) -c
 ALL_OBJFILES = $(patsubst %.cpp,%.o,$(wildcard *.cpp))
 OBJFILES := $(filter-out Sentences.o Textify.o, $(ALL_OBJFILES))
+BIN = ../../bin
 
-all: tags ../bin/textify ../bin/sentences
+all: TAGS $(BIN)/wiki-textify $(BIN)/sentences $(BIN)/wiki-articles
 
-tags: $(wildcard *.cpp)
+TAGS: $(wildcard *.cpp)
 	etags $(wildcard *.cpp)
 
-../bin/textify: $(OBJFILES) Textify.o
-	${CC} $(CFLAGS) -lpcre $(OBJFILES) Textify.o -lpcre -o ../bin/textify
+$(BIN)/wiki-textify: $(OBJFILES) Textify.o
+	${CC} $(CFLAGS) -lpcre $(OBJFILES) Textify.o -lpcre -o $(BIN)/wiki-textify
 
-../bin/sentences: $(OBJFILES) Sentences.o
-	${CC} $(CFLAGS) -lpcre $(OBJFILES) Sentences.o -lpcre -o ../bin/sentences
+$(BIN)/sentences: $(OBJFILES) Sentences.o
+	${CC} $(CFLAGS) $(OBJFILES) Sentences.o -lpcre -o $(BIN)/sentences
+
+$(BIN)/wiki-articles: articles.py
+	ln -fs ../src/wikipedia/articles.py $(BIN)/wiki-articles
 
 %.o: %.cpp
 	$(COMPILE) -o $@ $<
 
 clean:
-	rm -f *.o ../bin/textify ../bin/sentences TAGS
+	rm -f *.o $(BIN)/wiki-textify $(BIN)/sentences $(BIN)/wiki-articles TAGS
