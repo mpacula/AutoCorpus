@@ -44,5 +44,5 @@ if __name__ == "__main__":
     parser.process()
     parser.close()
   except KeyboardInterrupt:
-    print "\n\nCancelled. Partial results may have been generated."
+    sys.stderr.write("\n\nCancelled. Partial results may have been generated.\n")
     exit(1)
