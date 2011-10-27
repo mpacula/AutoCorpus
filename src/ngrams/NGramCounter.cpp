@@ -50,7 +50,7 @@ void NGramCounter::endChunk()
   for(set<string>::iterator it = sortedNGrams.begin(); it != sortedNGrams.end(); it++) {
     string ngram = *it;
     long count = currentCounts[ngram];
-    fprintf(chunkFile, "%s%c%ld\n", ngram.c_str(), SEPARATOR, count);
+    fprintf(chunkFile, "%ld%c%s\n", count, SEPARATOR, ngram.c_str());
   }  
   fflush(chunkFile);
   rewind(chunkFile);
@@ -100,13 +100,14 @@ void NGramCounter::printOnlyChunk()
 
   const size_t buf_size = 10*1024*1024; // 10MB
   char* buf = new char[buf_size];
+  char* ngram = new char[buf_size];
   printf("%ld\n", totalCount); // total no. of ngrams
 
   long c = 0;
   long c_total = 0;
   while(fgets(buf, buf_size, chunkFiles[0])) {
     cout << buf;
-    deconstructNGram(buf, buf, &c);
+    deconstructNGram(buf, ngram, &c);
     c_total += c;
   }
 
@@ -161,7 +162,7 @@ FILE* NGramCounter::mergeChunks(FILE* chunk1, FILE* chunk2, bool last)
       int cmp = strcmp(ngram1, ngram2);
       /* ngrams from both chunks equal: add counts */
       if(cmp == 0) {
-        fprintf(mergedFile, "%s%c%ld\n", ngram1, SEPARATOR, c1+c2);
+        fprintf(mergedFile, "%ld%c%s\n", c1+c2, SEPARATOR, ngram1);
         line1 = fgets(line1, buf_size, chunk1);
         line2 = fgets(line2, buf_size, chunk2);
         c_total+=(c1+c2);

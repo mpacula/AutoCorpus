@@ -10,9 +10,10 @@ char* deconstructNGram(const char* str, char* ngram, long* count) {
   if(delim == NULL)
     return NULL;
 
-  strncpy(ngram, str, (size_t)(delim-str));
-  ngram[(size_t)(delim-str)] = '\0';
-  sscanf(&delim[1], "%ld", count);
+  const size_t delimIndex = (delim - str)/sizeof(char);
+
+  strncpy(ngram, &delim[1], strlen(str)-delimIndex);
+  sscanf(str, "%ld", count);
   return ngram;
 }
 
