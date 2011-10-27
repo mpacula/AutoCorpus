@@ -24,4 +24,4 @@ $(BIN)/ngrams-freq-filter: $(OBJFILES) Filter.o
 	$(COMPILE) -o $@ $<
 
 clean:
-	rm -f *.o TAGS $(BIN)/ngrams $(BIN)/tokenize $(BIN)/ngrams-freq-filte
+	rm -f *.o TAGS $(BIN)/ngrams $(BIN)/tokenize $(BIN)/ngrams-freq-filter
