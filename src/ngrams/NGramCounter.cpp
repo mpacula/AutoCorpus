@@ -119,6 +119,7 @@ void NGramCounter::printOnlyChunk()
   }
   
   delete[] buf;
+  delete[] ngram;
   fclose(chunkFiles[0]);
   chunkFiles.clear();
 }
@@ -147,15 +148,23 @@ FILE* NGramCounter::mergeChunks(FILE* chunk1, FILE* chunk2, bool last)
   line1 = fgets(line1, buf_size, chunk1);
   line2 = fgets(line2, buf_size, chunk2);
   while(true) {
-    
+
     /* Both lines nonempty */
     if(line1 != NULL && line2 != NULL) {
-
-      if(!deconstructNGram(line1, ngram1, &c1) || !deconstructNGram(line2, ngram2, &c2)) {
-        cerr << "WARNING: Could not deconstruct ngram when merging chunks. Lines (chunk 1 and chunk 2): " << endl;
+      if(!deconstructNGram(line1, ngram1, &c1)) {
+        cerr << "WARNING: Could not deconstruct ngram when merging chunks. Line (chunk 1): " << endl;
         cerr << line1;
+        cerr << "END OF LINE" << endl;
+
+        line1 = fgets(line1, buf_size, chunk1);
+        continue;
+      }
+      else if(!deconstructNGram(line2, ngram2, &c2)) {
+        cerr << "WARNING: Could not deconstruct ngram when merging chunks. Line (chunk 2): " << endl;
         cerr << line2;
-        // TODO: skip lines (call fgets)
+        cerr << "END OF LINE" << endl;
+
+        line2 = fgets(line2, buf_size, chunk2);
         continue;
       }
 
@@ -186,8 +195,9 @@ FILE* NGramCounter::mergeChunks(FILE* chunk1, FILE* chunk2, bool last)
     /* Only first line nonempty */
     else if(line1 != NULL) {
       if(!deconstructNGram(line1, ngram1, &c1)) {
-        cerr << "WARNING: Could not deconstruct ngram when merging chunks. Lines (chunk 1): " << endl;
+        cerr << "WARNING: Could not deconstruct ngram when merging chunks. Line (chunk 1): " << endl;
         cerr << line1;
+	cerr << "END OF LINE" << endl;
       } else {
         c_total += c1;
         fputs(line1, mergedFile);
@@ -197,8 +207,9 @@ FILE* NGramCounter::mergeChunks(FILE* chunk1, FILE* chunk2, bool last)
     /* Only second line nonempty */
     else if(line2 != NULL) {
       if(!deconstructNGram(line2, ngram2, &c2)) {
-        cerr << "WARNING: Could not deconstruct ngram when merging chunks. Lines (chunk 2): " << endl;
+        cerr << "WARNING: Could not deconstruct ngram when merging chunks. Line (chunk 2): " << endl;
         cerr << line2;
+	cerr << "END OF LINE" << endl;
       } else {
         c_total += c2;
         fputs(line2, mergedFile);

@@ -87,7 +87,7 @@ string SentenceExtractor::extract(const char* input)
       
     case '.':
       output += ch;
-      if(is_ws(peek()) &&
+      if((is_ws(peek()) || peek() == '"' || peek() == '\'') &&
          !out_ends_with("e.g.") &&
          !out_ends_with("i.e.")) {
         if(peek(3) == '.') { // One letter "sentence": most likely an abbreviation
