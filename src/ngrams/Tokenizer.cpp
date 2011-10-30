@@ -5,7 +5,7 @@
 #include <iostream>
 #include <string>
 
-#define PUNCTUATION ".,!?()&@()[]{}/\\\"'#:;<>^”*=-−—"
+#define PUNCTUATION ".,!?()&@()[]{}/\\\"'#:;<>^”*=-−—\x93"
 
 using namespace std;
 
