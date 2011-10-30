@@ -24,6 +24,11 @@ private:
     return strchr(PUNCTUATION, ch);
   }
 
+  inline bool isDigit(char ch) 
+  {
+    return isdigit(ch);
+  }
+
   inline bool isKeep(char ch) 
   {
     return strchr(keep, ch);
@@ -31,7 +36,7 @@ private:
 
   inline bool isWS(char ch)
   {
-    return strchr(" \t\r\n\f", ch);
+    return isspace(ch);
   }
 
   inline void space()
@@ -93,7 +98,12 @@ public:
           space();
         }
         else if(isPunctuation(ch)) {
-          space();
+          // don't break words on commas delimiting orders of magnitude
+          // in numbers, e.g. 1,000,000
+          if(ch == ',' && isDigit(lastChar) && isDigit(input[i+1]))
+            character(ch);
+          else
+            space();
         }
         else if(!isPunctuation(ch))
           character(tolower(ch));
