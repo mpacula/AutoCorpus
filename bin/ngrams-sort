@@ -1,0 +1,7 @@
+#!/bin/bash
+
+# sorts ngrams in a descending order (by counts)
+
+read count
+echo "$count"
+sort -nr
