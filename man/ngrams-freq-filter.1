@@ -1,13 +1,13 @@
-.TH filter 1 "October 16, 2011" "version 1.0" "USER COMMANDS"
+.TH ngrams-freq-filter 1 "October 16, 2011" "version 1.0" "USER COMMANDS"
 .SH NAME
-filter \- filters out ngrams with low counts.
+ngrams-freq-filter \- filters out ngrams with low counts.
 
 .SH SYNOPSIS
-.B filter [-t THRESHOLD]
+.B ngrams-freq-filter [-t THRESHOLD]
 
 .SH DESCRIPTION 
-The filter utility reads ngrams produced by the 'ngram' utility from
-standard input and filters out ngrams with counts below a
+The ngrams-freq-filter utility reads ngrams produced by the 'ngram'
+utility from standard input and filters out ngrams with counts below a
 user-specified threshold. The output is written to standard output.
 
 .SH OPTIONS
@@ -21,7 +21,7 @@ not be included in the output. Default value: 1.
 Command:
 .nf
 echo -e "this is a test\\nthis is yet another test" | \\
-ngrams -n 2 | filter -t 2
+ngrams -n 2 | ngrams-freq-filter -t 2
 .fi
 .TP
 Output:

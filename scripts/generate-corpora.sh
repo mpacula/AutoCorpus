@@ -68,7 +68,11 @@ then
     for f in $( find ../data/wikipedia/ngrams -iname "*grams*unsorted.txt" );
     do
         echo "Sorting $f..."
-        pv "$f" | ./ngrams-sort > $( echo -n "$f" | sed "s/-unsorted//g" )
+        dest=$( echo -n "$f" | sed "s/-unsorted//g" )
+        if [[ "$dest" -ot "$f" ]];
+        then
+            pv "$f" | ./ngrams-sort > "$dest"
+        fi
     done
     cd ..
 fi

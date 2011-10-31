@@ -1,19 +1,19 @@
-.TH extract 1 "October 16, 2011" "version 1.0" "USER COMMANDS"
+.TH wiki-articles 1 "October 16, 2011" "version 1.0" "USER COMMANDS"
 .SH NAME
-extract \- extract articles from a Wikipedia XML database.
+wiki-articles \- extract articles from a Wikipedia XML database.
 
 .SH SYNOPSIS
-.B extract [-d directory]
+.B wiki-articles [-d directory]
 
 .SH DESCRIPTION 
-The extract utility reads a Wikipedia XML database of articles from
+The wiki-articles utility reads a Wikipedia XML database of articles from
 standard input and extracts MediaWiki markup for each article. The
 output is printed to standard output, or, if the \-d parameter is
 specified, to files in a directory.
 
 .PP
-extract can work with very large databases (tens of gigabytes) without
-running our of memory.
+wiki-articles can work with very large databases (tens of gigabytes)
+without running our of memory.
 
 .PP 
 If output directory is not specified, articles are printed to standard
@@ -29,7 +29,7 @@ separate file. The files will be named after the articles.
 .TP
 Command:
 .nf
-cat ../wikipedia/data/enwiki-20110620-pages-articles.xml | extract
+cat ../wikipedia/data/enwiki-20110620-pages-articles.xml | wiki-articles
 .fi
 .TP
 Output (truncated):
