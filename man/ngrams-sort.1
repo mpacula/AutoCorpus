@@ -1,0 +1,31 @@
+.TH ngrams-sort 1 "October 16, 2011" "version 1.0" "USER COMMANDS"
+.SH NAME
+ngrams-sort \- sorts ngrams by descending counts (most frequent first)
+
+.SH SYNOPSIS
+.B ngrams-sort
+
+.SH DESCRIPTION
+The ngrams-sort utility reads ngrams from standard input and sorts them
+by descending counts (most frequent first).
+
+.SH EXAMPLES
+.TP
+Command:
+.nf
+echo "computer languages are singificantly different from human languages" | \\
+      ngrams -n 1 | ngrams-sort
+.fi
+.TP
+Output:
+.nf
+9
+2       languages
+1       singificantly
+1       </s>
+1       human
+1       from
+1       different
+1       computer
+1       are
+.fi

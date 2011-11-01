@@ -84,7 +84,11 @@ then
     for f in $( find ../data/wikipedia/ngrams -iname "*grams.txt" );
     do
         echo "Compressing $f..."
-        pv "$f" | bzip2 --best > $( echo -n "$f" | sed "s/.txt/.bz2/g" )
+        dest=$( echo -n "$f" | sed "s/.txt/.txt.bz2/g" )
+        if [[ "$dest" -ot "$f" ]];
+        then
+            pv "$f" | bzip2 --best > "$dest"
+        fi
     done
     cd ..
 fi
