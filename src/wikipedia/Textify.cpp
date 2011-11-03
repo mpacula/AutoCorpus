@@ -34,7 +34,7 @@
 
 using namespace std;
 
-void find_location(const char* input, const size_t pos, long& line, long& column)
+void findLocation(const char* input, const size_t pos, long& line, long& column)
 {
   line = 1;
   column = 0;
@@ -48,7 +48,7 @@ void find_location(const char* input, const size_t pos, long& line, long& column
   }
 }
 
-void print_usage(char** argv) 
+void printUsage(char** argv) 
 {
   cerr << "Usage: " << argv[0] << " <stdin>" << endl;
 }
@@ -61,7 +61,7 @@ int main(int argc, char** argv)
        strcmp(argv[i], "-h") == 0)
       tf.ignoreHeadings = true;
     else {
-      print_usage(argv);
+      printUsage(argv);
       return 1;
     }
   }
@@ -82,9 +82,9 @@ int main(int argc, char** argv)
       catch(Error err) {
         long line;
         long column;
-        find_location(input.c_str(), err.pos, line, column);
+        findLocation(input.c_str(), err.pos, line, column);
         cerr << "ERROR (" << line+article_start_index << ":" << column << ")  " << err.message
-             << " at: " << tf.get_error_context() << endl;
+             << " at: " << tf.getErrorContext() << endl;
       } 
       delete[] plaintext;
       input.clear();

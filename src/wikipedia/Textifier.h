@@ -64,35 +64,35 @@ private:
   std::stack<State> stateStack;
   std::string errorContext;
 
-  std::string get_snippet(size_t pos);
+  std::string getSnippet(size_t pos);
   
-  bool starts_with(std::string& str);
-  bool starts_with(const char* str);
-  const char* get_remaining();
-  char* get_current_out();
-  void skip_match();
-  void skip_line();
-  void append_group_and_skip(int group);
+  bool startsWith(std::string& str);
+  bool startsWith(const char* str);
+  const char* getRemaining();
+  char* getCurrentOut();
+  void skipMatch();
+  void skipLine();
+  void appendGroupAndSkip(int group);
   void newline(int count);
 
-  void do_link();
-  void do_format();
-  void do_tag();
-  void do_meta_box();
-  void do_meta_pipe();
-  void do_heading();
-  void do_comment();
-  void do_list();
-  void ignore_nested(std::string name, char open, char close);
+  void doLink();
+  void doFormat();
+  void doTag();
+  void doMetaBox();
+  void doMetaPipe();
+  void doHeading();
+  void doComment();
+  void doList();
+  void ignoreNested(std::string name, char open, char close);
 
-  bool get_link_boundaries(int& start, int& end, int& next);
+  bool getLinkBoundaries(int& start, int& end, int& next);
 
-  bool at_line_start(const char* str, int pos);
+  bool atLineStart(const char* str, int pos);
 
-  std::string get_err(std::string name);
+  std::string getErrorMessage(std::string name);
   std::string* match(std::string name, pcre* regexp);
 
-  pcre* make_pcre(const char* expr, int options);
+  pcre* makePCRE(const char* expr, int options);
   pcre* re_format;
   pcre* re_heading;
   pcre* re_comment;
@@ -105,7 +105,7 @@ public:
   int textify(const char* markup, const int markup_len,
               char* out, const int out_len);
 
-  std::string get_error_context();
+  std::string getErrorContext();
 };
 
 #endif // Textifier_h

@@ -40,17 +40,17 @@ SentenceExtractor::~SentenceExtractor()
 {
 }
 
-char SentenceExtractor::last_written_char() 
+char SentenceExtractor::lastWrittenChar() 
 {
   return output[output.size()-1];
 }
 
-bool SentenceExtractor::is_last_written_char(const char* chars) 
+bool SentenceExtractor::isLastWrittenChar(const char* chars) 
 {
   if(output.empty())
     return false;
   const int n = strlen(chars);
-  const char last = last_written_char();
+  const char last = lastWrittenChar();
   for(int i = 0; i < n; i++) {
     if(last == chars[i])
       return true;
@@ -58,7 +58,7 @@ bool SentenceExtractor::is_last_written_char(const char* chars)
   return false;
 }
 
-bool SentenceExtractor::is_ws(char ch) 
+bool SentenceExtractor::isWS(char ch) 
 {
   return ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r';
 }
@@ -85,7 +85,7 @@ void SentenceExtractor::newline(int count)
   }
 }
 
-bool SentenceExtractor::out_ends_with(const char* suffix)
+bool SentenceExtractor::outEndsWith(const char* suffix)
 {
   return output.find(suffix, output.size()-strlen(suffix)) != string::npos;
 }
@@ -106,16 +106,16 @@ string SentenceExtractor::extract(const char* input)
         newline(2);
         pos++;
       }
-      else if(!is_last_written_char(" \t")) {
+      else if(!isLastWrittenChar(" \t")) {
         output += ' ';
       }
       break;
       
     case '.':
       output += ch;
-      if((is_ws(peek()) || peek() == '"' || peek() == '\'') &&
-         !out_ends_with("e.g.") &&
-         !out_ends_with("i.e.")) {
+      if((isWS(peek()) || peek() == '"' || peek() == '\'') &&
+         !outEndsWith("e.g.") &&
+         !outEndsWith("i.e.")) {
         if(peek(3) == '.') { // One letter "sentence": most likely an abbreviation
           output += input[pos+1];
           output += input[pos+2];
@@ -140,7 +140,7 @@ string SentenceExtractor::extract(const char* input)
 
     case ' ':
     case '\t':
-      if(pos == 0 || !is_last_written_char(" \t\r\n"))
+      if(pos == 0 || !isLastWrittenChar(" \t\r\n"))
         output += ch;
       break;
 

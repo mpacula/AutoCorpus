@@ -52,7 +52,7 @@ char* substr(char* dest, const char* src, int start, int len, int n)
   return dest;
 }
 
-bool is_prefix(const char* str, const char* sub, const size_t n)
+bool isPrefix(const char* str, const char* sub, const size_t n)
 {
   size_t i = 0;
   while(sub[i] != '\0' &&
@@ -64,11 +64,11 @@ bool is_prefix(const char* str, const char* sub, const size_t n)
   return i == strlen(sub);
 }
 
-bool is_substr(const char* str, const char* substr, int n)
+bool isSubstr(const char* str, const char* substr, int n)
 {
   const int m = strlen(substr);
   while(m <= n) {
-    if(is_prefix(str, substr, n))
+    if(isPrefix(str, substr, n))
       return true;
 
     str = &str[1];
@@ -83,9 +83,9 @@ Textifier::Textifier()
   ignoreHeadings = false;
 
   // Compile all the regexes we'll need
-  re_format  = make_pcre("^(''+)(.*?)(\\1|\n)", 0);
-  re_heading = make_pcre("^(=+)\\s*(.+?)\\s*\\1", 0);
-  re_comment = make_pcre("<!--.*?-->", PCRE_MULTILINE | PCRE_DOTALL);
+  re_format  = makePCRE("^(''+)(.*?)(\\1|\n)", 0);
+  re_heading = makePCRE("^(=+)\\s*(.+?)\\s*\\1", 0);
+  re_comment = makePCRE("<!--.*?-->", PCRE_MULTILINE | PCRE_DOTALL);
 
   state.markup = NULL;
   state.out = NULL;
@@ -100,7 +100,7 @@ Textifier::~Textifier()
   pcre_free(re_comment);
 }
 
-pcre* Textifier::make_pcre(const char* expr, int options)
+pcre* Textifier::makePCRE(const char* expr, int options)
 {
   const char* error;
   int erroffset;
@@ -115,7 +115,7 @@ pcre* Textifier::make_pcre(const char* expr, int options)
   return re;
 }
 
-bool Textifier::get_link_boundaries(int& start, int& end, int& next)
+bool Textifier::getLinkBoundaries(int& start, int& end, int& next)
 {
   size_t i = state.pos;   // current search position
   int level = 0; // nesting level
@@ -152,21 +152,21 @@ bool Textifier::get_link_boundaries(int& start, int& end, int& next)
   return level == 0; // if 0, then brackets match and this is a correct link  
 }
 
-string Textifier::get_error_context() {
+string Textifier::getErrorContext() {
   return errorContext;
 }
 
-bool Textifier::starts_with(string& str)
+bool Textifier::startsWith(string& str)
 {
-  return starts_with(str.c_str());
+  return startsWith(str.c_str());
 }
 
-bool Textifier::starts_with(const char* str)
+bool Textifier::startsWith(const char* str)
 {
-  return is_prefix(&state.markup[state.pos], str, state.N-state.pos);
+  return isPrefix(&state.markup[state.pos], str, state.N-state.pos);
 }
 
-string Textifier::get_snippet(size_t pos)
+string Textifier::getSnippet(size_t pos)
 {
   if(pos >= state.N)
     return "n/a";
@@ -183,7 +183,7 @@ string Textifier::get_snippet(size_t pos)
   return string(snippet);
 }
 
-string Textifier::get_err(string name)
+string Textifier::getErrorMessage(string name)
 {
   ostringstream os;
   os << "Expected markup type '" << name << "'";
@@ -194,16 +194,16 @@ string* Textifier::match(string name, pcre* regexp)
 {
   const int ovector_size = 3*sizeof(state.groups)/sizeof(string);
   int ovector[ovector_size];
-  int rc = pcre_exec(regexp, NULL, get_remaining(), state.N-state.pos, 0, 0, ovector, ovector_size);
+  int rc = pcre_exec(regexp, NULL, getRemaining(), state.N-state.pos, 0, 0, ovector, ovector_size);
  
   if(rc == PCRE_ERROR_NOMATCH || rc == 0)
     return NULL;
   else if(rc < 0)
-    throw Error(get_err(name), state.pos);
+    throw Error(getErrorMessage(name), state.pos);
 
   // from pcredemo.c
   for(int i = 0; i < rc; i++) {
-    const char *substring_start = get_remaining() + ovector[2*i];
+    const char *substring_start = getRemaining() + ovector[2*i];
     int substring_length = ovector[2*i+1] - ovector[2*i];
     char substr[substring_length+1];
     strncpy(substr, substring_start, substring_length);
@@ -213,43 +213,43 @@ string* Textifier::match(string name, pcre* regexp)
   return state.groups;
 }
 
-const char* Textifier::get_remaining()
+const char* Textifier::getRemaining()
 {
   return &state.markup[state.pos];
 }
 
-char* Textifier::get_current_out()
+char* Textifier::getCurrentOut()
 {
   return &state.out[state.pos_out];
 }
 
-void Textifier::skip_match()
+void Textifier::skipMatch()
 {
   state.pos += state.groups[0].length();
 }
 
-void Textifier::skip_line()
+void Textifier::skipLine()
 {
   while(state.pos < state.N && state.markup[state.pos++] != '\n');
 }
 
-void Textifier::append_group_and_skip(int group)
+void Textifier::appendGroupAndSkip(int group)
 {
   string* val = &state.groups[group];
-  strncpy(get_current_out(), val->c_str(), val->length());
+  strncpy(getCurrentOut(), val->c_str(), val->length());
   state.pos += state.groups[0].length();
   state.pos_out += val->length();
 }
 
-void Textifier::do_link() 
+void Textifier::doLink() 
 {
   int start = 0, end = 0, next = 0;
-  if(get_link_boundaries(start, end, next)) {
+  if(getLinkBoundaries(start, end, next)) {
     char contents[end-start+1];
     substr(contents, state.markup, start, end-start, state.N);
 
     // is this a file link? if so, put it in its own paragraph
-    const bool fileLink = is_substr(&state.markup[state.pos], "File:", start-state.pos);
+    const bool fileLink = isSubstr(&state.markup[state.pos], "File:", start-state.pos);
     if(fileLink) {
       newline(2);
     }
@@ -285,7 +285,7 @@ void Textifier::do_link()
   }
 }
 
-void Textifier::do_heading() 
+void Textifier::doHeading() 
 {
   if(!match(string("heading"), re_heading))
     {
@@ -300,14 +300,14 @@ void Textifier::do_heading()
     state.pos = state.N;
   }
   else if(ignoreHeadings)
-    skip_match();
+    skipMatch();
   else {
-    append_group_and_skip(2);
+    appendGroupAndSkip(2);
     newline(2);    
   }
 }
 
-void Textifier::do_tag()
+void Textifier::doTag()
 {
   int level = 0;
   bool closed = false;
@@ -336,25 +336,25 @@ void Textifier::do_tag()
   }
 }
 
-void Textifier::do_comment()
+void Textifier::doComment()
 {
   if(!match(string("comment"), re_comment))  
-    throw Error(get_err("comment"), state.pos);
+    throw Error(getErrorMessage("comment"), state.pos);
 
-  skip_match();
+  skipMatch();
 }
 
-void Textifier::do_meta_box()
+void Textifier::doMetaBox()
 {
-  ignore_nested(string("meta"), '{', '}');
+  ignoreNested(string("meta"), '{', '}');
 }
 
-void Textifier::do_meta_pipe()
+void Textifier::doMetaPipe()
 {
-  skip_line();
+  skipLine();
 }
 
-void Textifier::do_format()
+void Textifier::doFormat()
 {
   // ignore all immediate occurences of two or more apostrophes
   while(state.pos < state.N && state.markup[state.pos] == '\'') {
@@ -362,7 +362,7 @@ void Textifier::do_format()
   }
 }
 
-void Textifier::do_list()
+void Textifier::doList()
 {
   newline(2);
   while(state.pos < state.N &&
@@ -376,7 +376,7 @@ void Textifier::do_list()
   int end_index = state.pos;
   while(state.markup[end_index] != '\0' &&
         state.markup[end_index] != '\n' &&
-        !is_prefix(&state.markup[end_index], "<!--", state.N-end_index)) {
+        !isPrefix(&state.markup[end_index], "<!--", state.N-end_index)) {
     end_index++;
   }
   
@@ -391,10 +391,10 @@ void Textifier::do_list()
   newline(2);
 }
 
-void Textifier::ignore_nested(string name, char open, char close) 
+void Textifier::ignoreNested(string name, char open, char close) 
 {
   if(state.markup[state.pos] != open)
-    throw Error(get_err(name), state.pos);
+    throw Error(getErrorMessage(name), state.pos);
   
   int level = 0;
   do {
@@ -415,7 +415,7 @@ void Textifier::newline(int count)
   }
 }
 
-bool Textifier::at_line_start(const char* str, int pos) {
+bool Textifier::atLineStart(const char* str, int pos) {
   if(pos == 0)
     return true;
 
@@ -451,31 +451,31 @@ int Textifier::textify(const char* markup, const int markup_len,
   
   try {
     while(state.pos < state.N && state.pos_out < state.M) {      
-        if(starts_with("["))
-          do_link();
-        else if(starts_with("<!--"))
-          do_comment();
-        else if(starts_with("<"))
-          do_tag();
-        else if(starts_with("{{") || starts_with("{|"))
-          do_meta_box();
-        else if(starts_with("|") && at_line_start(state.markup, state.pos))
-          do_meta_pipe();
-        else if(at_line_start(state.out, state.pos_out) && (starts_with("*") || starts_with("-")))
-          do_list();
-        else if(at_line_start(state.out, state.pos_out) && starts_with(":"))
+        if(startsWith("["))
+          doLink();
+        else if(startsWith("<!--"))
+          doComment();
+        else if(startsWith("<"))
+          doTag();
+        else if(startsWith("{{") || startsWith("{|"))
+          doMetaBox();
+        else if(startsWith("|") && atLineStart(state.markup, state.pos))
+          doMetaPipe();
+        else if(atLineStart(state.out, state.pos_out) && (startsWith("*") || startsWith("-")))
+          doList();
+        else if(atLineStart(state.out, state.pos_out) && startsWith(":"))
           state.pos++;
-        else if(starts_with("="))
-          do_heading();
-        else if(starts_with("''"))
-          do_format();
+        else if(startsWith("="))
+          doHeading();
+        else if(startsWith("''"))
+          doFormat();
         else {
           state.out[state.pos_out++] = state.markup[state.pos++];
         }
       }
     }
     catch(Error err) {
-      errorContext = get_snippet(err.pos);
+      errorContext = getSnippet(err.pos);
       state = stateStack.top();
       stateStack.pop();
       throw err;

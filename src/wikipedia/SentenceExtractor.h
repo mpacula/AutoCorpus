@@ -40,13 +40,13 @@ class SentenceExtractor
   std::string output;
   ExtractorOptions opts;
 
-  bool out_ends_with(const char*);
+  bool outEndsWith(const char*);
 
-  char last_written_char();
+  char lastWrittenChar();
   char peek();
   char peek(size_t n);
-  bool is_last_written_char(const char*);
-  bool is_ws(char);
+  bool isLastWrittenChar(const char*);
+  bool isWS(char);
   void newline(int);
 
  public:
