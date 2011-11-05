@@ -40,15 +40,24 @@ def fprint(x):
   print x
 
 def save_article(htmlparser, article, directory):
-  filename = re.sub("(\s+)|/", "_", article.title.lower()) + ".txt"
-  f = codecs.open(os.path.join(directory, filename), encoding='utf-8', mode='w')
-  f.write(htmlparser.unescape(article.markup))
-  f.write("\n")
-  f.close()
+  f = None
+  try:
+    filename = re.sub("(\s+)|/", "_", article.title.lower()) + ".txt"
+    f = codecs.open(os.path.join(directory, filename), encoding='utf-8', mode='w')
+    f.write(htmlparser.unescape(article.markup))
+    f.write("\n")
+    f.close()
+  except Exception as e:
+    sys.stderr.write("\nError extracting article: " + str(e) + "\n")
+    if f != None:
+      f.close()
 
 def print_article(htmlparser, article):
-  print unicode(htmlparser.unescape(article.markup)).encode("utf-8")
-  print "\n\n\f"
+  try:
+    print unicode(htmlparser.unescape(article.markup)).encode("utf-8")
+    print "\n\n\f"
+  except Exception as e:
+    sys.stderr.write("\nError extracting article: " + str(e) + "\n")
 
 if __name__ == "__main__":
   try:
