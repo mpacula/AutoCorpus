@@ -1,6 +1,7 @@
 .TH ngrams-sort 1 "October 16, 2011" "version 1.0" "USER COMMANDS"
 .SH NAME
-.B ngrams-sort \- sorts ngrams by descending counts (most frequent first)
+.B ngrams-sort 
+\- sorts ngrams by descending counts (most frequent first)
 
 .SH SYNOPSIS
 .B ngrams-sort
@@ -15,8 +16,8 @@ by descending counts (most frequent first).
 .TP
 Command:
 .nf
-echo "computer languages are singificantly different from human languages" | \\
-      ngrams -n 1 | ngrams-sort
+echo "computer languages are singificantly different from \\
+      human languages" | ngrams -n 1 | ngrams-sort
 .fi
 .TP
 Output:

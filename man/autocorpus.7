@@ -68,7 +68,10 @@ For example, to clean up the text file
 .I wikipedia-plaintext.txt 
 and save it as 
 .IR wikipedia-clean.txt ,
-pipe it through both sentences and tokenize:
+pipe it through both 
+.B sentences 
+and
+.BR tokenize :
 .nf
 pv wikipedia-plaintext.txt | sentences | tokenize > \\
 wikipedia-clean.txt
@@ -110,7 +113,7 @@ For example, to filter out ngrams with counts below 5 in the file bigrams.txt, r
 pv bigrams.txt | ngrams-freq-filter -t 5
 .fi
 
-.SH LIMITATIONS: Unicode
+.SH LIMITATIONS: UNICODE
 Currently, autocorpus only has a limited support for unicode (UTF-8).
 While unicode input and output should mostly work, some characters might
 not be decoded correctly.
@@ -123,13 +126,13 @@ Before passing input data to autocorpus tools, pipe it to
 .B uni2ascii
 first and then convert it back to Unicode with 
 .B ascii2uni 
-When you're done. For example:
+when you're done. For example:
 .nf
 pv enwiki-20110620-pages-articles.xml | uni2ascii | wiki-articles | \\
 wiki-textify -h | ascii2uni > wikipedia-plaintext.txt
 .fi
 
-.SH LIMITATIONS: non-English languages 
+.SH LIMITATIONS: NON-ENGLISH LANGUAGES
 Current release of autocorpus was designed for English corpora and
 your results with other languages may vary. In particular, the
 .B sentences
