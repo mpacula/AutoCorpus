@@ -11,7 +11,6 @@ The
 utility reads a list of sentences from standard
 input and extracts n-gram counts. The counts are printed to standard
 output in the following format:
-
 .nf
 <sum of counts>
 C    word1 ... wordn
@@ -19,11 +18,17 @@ C    word1 ... wordn
       ...
 .fi
 
-where words are delimited by spaces and the count 'C' is delimited
+where words are delimited by spaces and the count 
+.I C
+is delimited
 by a tab character. Each ngram is printed on a separate line and all
 ngrams are unique.
 
-The special words <s> and </s> denote start and end of sentences,
+The special words 
+.I <s>
+and
+.I </s>
+denote start and end of sentences,
 respectively. See
 .BR ngrams (5)
 for details.
@@ -49,8 +54,8 @@ specify the maximum amount of memory (bytes) that
 .B ngrams 
 can use for processing. LIMIT has to be an integer optionally followed
 by one of the following multiplier suffixes: b 512, k 1024, m 1024*1024, g 1024*1024*1024.
- The default value is 500M. Very small
-values may have negative effect on performance.
+ The default value is 500M. Nore that very small
+values may have a negative effect on performance.
 
 The value of LIMIT does not affect the maximum size of datasets that 
 .B ngrams 
@@ -80,14 +85,14 @@ echo -e "this is a test\\nthis is yet another test" | ngrams -n 2
 Output:
 .nf
 11
-<s> this	2
-a test	1
-another test	1
-is a	1
-is yet	1
-test </s>	2
-this is	2
-yet another	1
+2	<s> this
+1	a test
+1	another test
+1	is a
+1	is yet
+2	test </s>
+2	this is
+1	yet another
 .fi
 
 .SH AUTHOR

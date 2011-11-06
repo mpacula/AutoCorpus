@@ -31,7 +31,6 @@ articles.
 The two programs are intended to be used in a pipeline. For example,
 if you have the June 2011 Wikipedia database you can convert it to
 plaintext as follows:
-
 .nf
 pv enwiki-20110620-pages-articles.xml | wiki-articles | wiki-textify -h > \\
 wikipedia-plaintext.txt
@@ -70,7 +69,6 @@ For example, to clean up the text file
 and save it as 
 .IR wikipedia-clean.txt ,
 pipe it through both sentences and tokenize:
-
 .nf
 pv wikipedia-plaintext.txt | sentences | tokenize > \\
 wikipedia-clean.txt
@@ -86,7 +84,6 @@ the file
 .I wikipedia-clean.txt
 and save the result in
 .IR bigrams.txt :
-
 .nf
 pv wikipedia-clean.txt | ngrams -n 2 > bigrams.txt
 .fi
@@ -98,7 +95,6 @@ frequent ngrams first), pipe the output of
 .B ngrams
 to 
 .BR ngrams-sort :
-
 .nf
 pv wikipedia-clean.txt | ngrams -n 2 | ngrams-sort > bigrams.txt
 .fi
@@ -110,7 +106,6 @@ threshold. This will allow you, among other things, to remove some noise
 from your language model.
 
 For example, to filter out ngrams with counts below 5 in the file bigrams.txt, run:
-
 .nf
 pv bigrams.txt | ngrams-freq-filter -t 5
 .fi
@@ -121,20 +116,20 @@ While unicode input and output should mostly work, some characters might
 not be decoded correctly.
 
 If you encounter a Unicode issue with any of the autocorpus utilities,
-an easy workaround is to use an ASCII converter, e.g. the 
+an easy workaround is to use an ASCII converter, e.g.  
+.BR uni2ascii .
+
+Before passing input data to autocorpus tools, pipe it to 
 .B uni2ascii
-Linux utility.
-
-Before passing input data to autocorpus tools, pipe it to unii2ascii
-first and then convert it back to Unicode with ascii2uni when you're
-done. For example:
-
+first and then convert it back to Unicode with 
+.B ascii2uni 
+When you're done. For example:
 .nf
 pv enwiki-20110620-pages-articles.xml | uni2ascii | wiki-articles | \\
 wiki-textify -h | ascii2uni > wikipedia-plaintext.txt
 .fi
 
-.SH LIMITATIONS: non-English languages
+.SH LIMITATIONS: non-English languages 
 Current release of autocorpus was designed for English corpora and
 your results with other languages may vary. In particular, the
 .B sentences
@@ -158,3 +153,4 @@ The project website is http://mpacula.com/autocorpus.
 .BR tokenize (1),
 .BR wiki-articles (1),
 .BR wiki-textify (1),
+
