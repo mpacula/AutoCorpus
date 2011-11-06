@@ -1,0 +1,67 @@
+INTRODUCTION
+
+Autocorpus is a set of utilities that enable automatic extraction of
+language corpora and language models from publicly available
+datasets. For example, it provides the full set of tools to translate
+the entire English Wikipedia from a 30+GB XML file to a clean n-gram
+language model, all in a matter of a few hours. 
+
+
+
+BUILDING
+
+Before building autocorpus, make sure you have the required dependencies.
+These are:
+    - Python 2,7.1+
+    - libpcre3
+    - g++ 4.6.1
+
+Older versions *might* work, but have not been tested.
+
+Once you've verified that you have the prerequsutes, build autocorpus
+by calling make inside the 'src' directories.
+
+    $ cd src; make; cd ..
+
+The binaries will be placed in the 'bin' directory.
+ 
+
+
+USING AUTOCORPUS
+
+Assuming you have properly installed the documentation from the 'man'
+directory, you can get a quick overview of how to use Autocorpus by
+typing:
+
+    $ man 7 autocorpus
+
+This manpage can also be viewed at 
+http://mpacula.com/autocorpus/1.0/man/autocorpus.7.html
+
+Man pages are also available for individual tools, both locally and online 
+at http://mpacula.com/autocorpus/1.0/man
+
+
+
+PROJECT WEBSITE
+
+The project's website is http://mpacula.com/autocorpus. Use it to
+download new releases and submit bug reports. 
+
+
+
+AUTHOR & LICENSING
+
+Autocorpus was written by Maciej Pacula (maciej.pacula@gmail.com) 
+and is distributed as free software under the terms of the AGPL v3
+license. See the file COPYING for details.
+
+If you would like to incorporate one or more Autocorpus tools in
+proprietary product, please contact the author and inquire about a
+commercial license.
+
+Wikipedia-based corpora are distributed under the "Creative Commons
+Attribution - ShareAlike 3.0 Unported License". The full text of this
+license can be found at: 
+
+http://en.wikipedia.org/wiki/Wikipedia:CC-BY-SA
