@@ -1,12 +1,15 @@
 .TH ngrams-freq-filter 1 "October 16, 2011" "version 1.0" "USER COMMANDS"
 .SH NAME
-ngrams-freq-filter \- filters out ngrams with low counts.
+.B ngrams-freq-filter \- filters out ngrams with low counts.
 
 .SH SYNOPSIS
 .B ngrams-freq-filter [-t THRESHOLD]
 
 .SH DESCRIPTION 
-The ngrams-freq-filter utility reads ngrams produced by the 'ngram'
+The 
+.B ngrams-freq-filter
+utility reads ngrams produced by the 
+.B ngram
 utility from standard input and filters out ngrams with counts below a
 user-specified threshold. The output is written to standard output.
 
@@ -27,7 +30,22 @@ ngrams -n 2 | ngrams-freq-filter -t 2
 Output:
 .nf
 6
-<s> this	2
-test </s>	2
-this is	2
+2    <s> this
+2    test </s>
+2    this is
 .fi
+
+.SH AUTHOR
+Autocorpus was written by Maciej Pacula (maciej.pacula@gmail.com).
+
+The project website is http://mpacula.com/autocorpus.
+
+.SH SEE ALSO
+.BR autocorpus (7),
+.BR ngrams (1),
+.BR ngrams (5),
+.BR ngrams-sort (1),
+.BR sentences (1),
+.BR tokenize (1),
+.BR wiki-articles (1),
+.BR wiki-textify (1),

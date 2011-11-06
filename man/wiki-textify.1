@@ -1,12 +1,13 @@
 .TH wiki-textify 1 "October 16, 2011" "version 1.0" "USER COMMANDS"
 .SH NAME
-wiki-textify \- transform MediaWiki markup into plaintext.
+.B wiki-textify \- transform MediaWiki markup into plaintext.
 
 .SH SYNOPSIS
 .B wiki-textify [-h, --ignore-headings]
 
 .SH DESCRIPTION 
-wiki-textify takes MediaWiki input from standard input and outputs
+.B wiki-textify
+takes MediaWiki input from standard input and outputs
 plaintext, ignoring all metadata, tables, comments and other
 formatting.
 
@@ -39,3 +40,17 @@ This is a test of converting MediaWiki markup into plaintext
 ^L
 .fi
 
+.SH AUTHOR
+Autocorpus was written by Maciej Pacula (maciej.pacula@gmail.com).
+
+The project website is http://mpacula.com/autocorpus.
+
+.SH SEE ALSO
+.BR autocorpus (7),
+.BR ngrams (1),
+.BR ngrams (5),
+.BR ngrams-freq-filter (1),
+.BR ngrams-sort (1),
+.BR sentences (1),
+.BR tokenize (1),
+.BR wiki-articles (1),

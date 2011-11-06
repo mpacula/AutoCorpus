@@ -1,0 +1,34 @@
+.TH ngrams 5 "November 5, 2011" "version 1.0" "File formats"
+
+.SH SYNOPSIS
+This document describes the ngram format used by the autocorpus
+utilities.
+
+.SH DESCRIPTION
+Autocorpus utilities that read and write ngrams, such as 
+.B ngrams,
+.B ngrams-freq-filter
+and
+.BR ngrams-sort ,
+use the following input/output format:
+
+.nf
+<sum of counts>
+C    word1 ... wordn
+C    word1 ... wordn
+      ...
+.fi
+
+where words are delimited by spaces and the count 'C' is delimited
+by a tab character. Each ngram is printed on a separate line and all
+ngrams are unique. The first line is always the sum of all
+ngram counts.
+
+The special words <s> and </s> denote start and end of sentences,
+respectively.
+
+
+.SH SEE ALSO
+.BR ngrams (1),
+.BR ngrams-freq-filter (1),
+.BR ngrams-sort (1)

@@ -1,18 +1,22 @@
 .TH tokenize 1 "October 16, 2011" "version 1.0" "USER COMMANDS"
 .SH NAME
-tokenize \- transform sentences into space-delimited words while
+.B tokenize \- transform sentences into space-delimited words while
 ignoring punctuation.
 
 .SH SYNOPSIS
-.B extract [--keep CHARACTERS] [--parens]
+.B tokenize [--keep CHARACTERS] [--parens]
 
 .SH DESCRIPTION 
-The tokenize utility transforms sentences into space-delimited words
+The 
+.B tokenize 
+utility transforms sentences into space-delimited words
 (tokens), while ignoring punctuation. Sentences are read from standard
 input, assumed to be delimited by line breaks, and outputted to
-standard output also delimited by line breaks.
+standard output also delimited by line breaks. Page feeds and
+paragraph breaks are preserved.
 
-extract ignores text in parentheses unless otherwise specified (see
+.B tokenize
+ ignores text in parentheses unless otherwise specified (see
 the \-\-parens option).
 
 All output is downcased.
@@ -20,13 +24,16 @@ All output is downcased.
 .SH OPTIONS
 .TP
 \-\-keep CHARACTERS 
-specifies punctuation characters that should *not*
+specifies punctuation characters that should
+.I not
 be ommitted. Any characters specified in this argument will appear as
 separate tokens in the output.
 
 .TP
 \-\-parens
-if present, text inside parentheses will *not* be ignored, and
+if present, text inside parentheses will 
+.I not
+be ignored, and
 parentheses will appear as separate tokens in the output.
 
 .SH EXAMPLES
@@ -53,4 +60,17 @@ Output:
 an introduction to natural language processing , \
 computational linguistics , and speech recognition ( a book by jurafsky and martin ) 
 
+.SH AUTHOR
+Autocorpus was written by Maciej Pacula (maciej.pacula@gmail.com).
 
+The project website is http://mpacula.com/autocorpus.
+
+.SH SEE ALSO
+.BR autocorpus (7),
+.BR ngrams (1),
+.BR ngrams (5),
+.BR ngrams-freq-filter (1),
+.BR ngrams-sort (1),
+.BR sentences (1),
+.BR wiki-articles (1),
+.BR wiki-textify (1),

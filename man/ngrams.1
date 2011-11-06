@@ -6,14 +6,16 @@ ngrams \- extract n-grams from a list of sentences.
 .B ngrams [-n NUMBER] [-m LIMIT] [-v]
 
 .SH DESCRIPTION 
-The ngrams utility reads a list of sentences from standard
+The 
+.B ngrams 
+utility reads a list of sentences from standard
 input and extracts n-gram counts. The counts are printed to standard
 output in the following format:
 
 .nf
 <sum of counts>
-word1 ... wordn    C
-word1 ... wordn    C
+C    word1 ... wordn
+C    word1 ... wordn
       ...
 .fi
 
@@ -22,12 +24,17 @@ by a tab character. Each ngram is printed on a separate line and all
 ngrams are unique.
 
 The special words <s> and </s> denote start and end of sentences,
-respectively.
+respectively. See
+.BR ngrams (5)
+for details.
 
 .PP 
-ngrams is designed to work with very large files using constant
+.B ngrams 
+is designed to work with very large files using constant
 memory, where the memory limit can be specified by the user. While the
-more memory the better, ngrams is capable of processing tens of gigabytes of
+more memory the better, 
+.B ngrams
+is capable of processing tens of gigabytes of
 data using only a few megabytes of RAM (a disk cache is used for
 auxiliary storage).
 
@@ -38,25 +45,30 @@ specify the number of words per ngram: 1 for unigrams, 2 for bigrams etc.
 
 .TP
 \-m LIMIT 
-specify the maximum amount of memory (bytes) that ngrams can use for
-processing. LIMIT has to be an integer optionally followed by one of the
-following multiplier suffixes: b 512, k 1024, m 1024*1024, g 1024*1024*1024.
-The default value is 500M. Very small values may have negative effect
-on performance.
+specify the maximum amount of memory (bytes) that 
+.B ngrams 
+can use for processing. LIMIT has to be an integer optionally followed
+by one of the following multiplier suffixes: b 512, k 1024, m 1024*1024, g 1024*1024*1024.
+ The default value is 500M. Very small
+values may have negative effect on performance.
 
-The value of LIMIT does not affect the maximum size of datasets that ngrams 
+The value of LIMIT does not affect the maximum size of datasets that 
+.B ngrams 
 can process: it is possible, though not recommended, to process gigabytes
 of data in a few megabytes of memory.
 
-The actual memory used by ngrams will be equal to c*LIMIT, where c
-is a small system-dependent constant. Hence it is possible for ngrams
+The actual memory used by
+.B ngrams 
+will be equal to c*LIMIT, where c
+is a small system-dependent constant. Hence it is possible for
+.B ngrams
 to run out of memory even if LIMIT is less than the total amount of
-available RAM. In such cases, decrease LIMIT.
+available RAM. If such a situation occurs, decreasing LIMIT should
+fix the issue.
 
 .TP
 \-v
 turns on verbose mode. Intended for debugging only.
-
 
 .SH EXAMPLES
 .TP
@@ -78,3 +90,17 @@ this is	2
 yet another	1
 .fi
 
+.SH AUTHOR
+Autocorpus was written by Maciej Pacula (maciej.pacula@gmail.com).
+
+The project website is http://mpacula.com/autocorpus.
+
+.SH SEE ALSO
+.BR autocorpus (7),
+.BR ngrams (5),
+.BR ngrams-freq-filter (1),
+.BR ngrams-sort (1),
+.BR sentences (1),
+.BR tokenize (1),
+.BR wiki-articles (1),
+.BR wiki-textify (1),
