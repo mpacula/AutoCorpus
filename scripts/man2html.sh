@@ -16,6 +16,8 @@ for src in $( ls "$main_dir/man" | grep -v '~' | grep -P "\\.\\d" ); do
     sed "s/english/English/g; s/<p>is <a href/is <a href/g; s/This is a new paragraph.$/<p\/>\\0/g; \
         s/This is a test of converting MediaWiki markup into plaintext/<p\/>\\0/g" > \
         "$main_dir/man/html/$src.html"
+
+    cat "$main_dir/man/$src" | gzip > "$main_dir/man/$src.gz"
 done
 
 cd "$main_dir/man/html"

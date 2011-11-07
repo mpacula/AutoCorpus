@@ -56,6 +56,8 @@ def print_article(htmlparser, article):
   try:
     print unicode(htmlparser.unescape(article.markup)).encode("utf-8")
     print "\n\n\f"
+  except IOError:
+    sys.exit(0) # broken stdout => broken pipe
   except Exception as e:
     sys.stderr.write("\nError extracting article: " + str(e) + "\n")
 
