@@ -35,4 +35,3 @@ if [[ "$1" == "--upload" ]]; then
         echo -e "cd autocorpus/$version/man\nput $page" | ftp ftp.mpacula.com
     done
 fi
-

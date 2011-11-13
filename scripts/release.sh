@@ -13,8 +13,10 @@ ver=$( cat VERSION | grep -P -o "\d.\d+.*$" )
 
 echo "Releasing Autocorpus $ver"
 
-if [ "$1" != "--keep" ]; then
+if [[ "$@" != *--keep* ]]; then
     rm -r "releases/$ver"
+else
+    echo "WARNING: not cleaning release directory"
 fi
 
 mkdir -p "releases/$ver"
@@ -88,3 +90,12 @@ dpkg-buildpackage
 
 cd ..
 rm -rf "$src_name"
+
+
+# TODO: upload packages (if desired)
+echo "Uploading documentation..."
+if [[ "$@" == *--upload* ]]; then
+    cd "$main_dir"
+    scripts/generate-doc.sh --upload
+fi
+
