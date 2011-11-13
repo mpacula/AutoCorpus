@@ -77,6 +77,10 @@ rm -r "$dist"
 
 
 echo "Building deb package..."
+DEBEMAIL="maciej.pacula@gmail.com"
+DEBFULLNAME="Maciej Pacula"
+export DEBEMAIL DEBFULLNAME
+
 cd "$main_dir/releases/$ver"
 mkdir -p "deb"
 cd deb
@@ -93,8 +97,8 @@ rm -rf "$src_name"
 
 
 # TODO: upload packages (if desired)
-echo "Uploading documentation..."
 if [[ "$@" == *--upload* ]]; then
+    echo "Uploading documentation..."
     cd "$main_dir"
     scripts/generate-doc.sh --upload
 fi

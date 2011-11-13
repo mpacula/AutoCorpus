@@ -27,10 +27,10 @@ if [ "$ans" = y ];
 then
     cd bin
     pv ../data/source/enwiki-20110620-pages-articles.ascii.xml | \
-        ./wiki-articles | tee ../data/wikipedia/clean/articles.txt | \
-        ./wiki-textify -h | tee ../data/wikipedia/clean/textified.txt | \
-        ./sentences | tee ../data/wikipedia/clean/sentences.txt | \
-        ./tokenize | tee ../data/wikipedia/clean/tokenized.txt > /dev/null
+        wiki-articles | tee ../data/wikipedia/clean/articles.txt | \
+        wiki-textify -h | tee ../data/wikipedia/clean/textified.txt | \
+        sentences | tee ../data/wikipedia/clean/sentences.txt | \
+        tokenize | tee ../data/wikipedia/clean/tokenized.txt > /dev/null
     cd ..
 fi
 
@@ -38,7 +38,7 @@ ask "Would you like to generate unigrams?"
 if [ "$ans" = y ];
 then
     cd bin
-    pv ../data/wikipedia/clean/tokenized.txt | ./ngrams -m 500M -n 1 | ascii2uni > \
+    pv ../data/wikipedia/clean/tokenized.txt | ngrams -m 500M -n 1 | ascii2uni > \
         ../data/wikipedia/ngrams/unigrams-unsorted.txt
     cd ..
 fi
@@ -47,7 +47,7 @@ ask "Would you like to generate bigrams?"
 if [ "$ans" = y ];
 then
     cd bin
-    pv ../data/wikipedia/clean/tokenized.txt | ./ngrams -m 500M -n 2 | ascii2uni > \
+    pv ../data/wikipedia/clean/tokenized.txt | ngrams -m 500M -n 2 | ascii2uni > \
         ../data/wikipedia/ngrams/bigrams-unsorted.txt
     cd ..
 fi
@@ -56,7 +56,7 @@ ask "Would you like to generate trigrams?"
 if [ "$ans" = y ];
 then
     cd bin
-    pv ../data/wikipedia/clean/tokenized.txt | ./ngrams -m 500M -n 3 | ascii2uni > \
+    pv ../data/wikipedia/clean/tokenized.txt | ngrams -m 500M -n 3 | ascii2uni > \
         ../data/wikipedia/ngrams/trigrams-unsorted.txt
     cd ..
 fi
@@ -71,7 +71,7 @@ then
         dest=$( echo -n "$f" | sed "s/-unsorted//g" )
         if [[ "$dest" -ot "$f" ]];
         then
-            pv "$f" | ./ngrams-sort > "$dest"
+            pv "$f" | ngrams-sort > "$dest"
         fi
     done
     cd ..

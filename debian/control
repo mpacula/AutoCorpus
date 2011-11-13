@@ -12,4 +12,4 @@ Package: autocorpus
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}, libpcre3
 Description: automatic extraction of language corpora and language models
-Autocorpus is a set of utilities that enable automatic extraction of language corpora and language models from publicly available datasets. For example, it provides the full set of tools to translate the entire English Wikipedia from a 30+GB XML file to a clean n-gram language model, all in a matter of a few hours.
+ Autocorpus is a set of utilities that enable automatic extraction of language corpora and language models from publicly available datasets. For example, it provides the full set of tools to translate the entire English Wikipedia from a 30+GB XML file to a clean n-gram language model, all in a matter of a few hours.

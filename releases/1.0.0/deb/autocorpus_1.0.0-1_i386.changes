@@ -1,0 +1,31 @@
+Format: 1.8
+Date: Sat, 12 Nov 2011 18:41:48 -0500
+Source: autocorpus
+Binary: autocorpus
+Architecture: source i386
+Version: 1.0.0-1
+Distribution: unstable
+Urgency: low
+Maintainer: Maciej Pacula <maciej.pacula@gmail.com>
+Changed-By: Maciej Pacula <maciej.pacula@gmail.com>
+Description: 
+ autocorpus - automatic extraction of language corpora and language models
+Changes: 
+ autocorpus (1.0.0-1) unstable; urgency=low
+ .
+   * Initial release
+Checksums-Sha1: 
+ f2244b30344a18b5195733438afc4a82200d07a9 810 autocorpus_1.0.0-1.dsc
+ 229c1e774aaf5bf70123cccda57abd3194f7fbdc 41122 autocorpus_1.0.0.orig.tar.gz
+ b7dd101fa486a58cfab3fc1cd3a3ec115630892f 23504 autocorpus_1.0.0-1.debian.tar.gz
+ 9d7a69eaa367f8238af82ffe4a299ccf27aa8606 90214 autocorpus_1.0.0-1_i386.deb
+Checksums-Sha256: 
+ f05f292d4872d904004c99fab13e0982b0fbd06feda53d6dc7666647b8c1a412 810 autocorpus_1.0.0-1.dsc
+ 7a953ff241b55a5cabbebc0ba7c80aec835bd9c18963af6c5a778f958c5f779d 41122 autocorpus_1.0.0.orig.tar.gz
+ d9b187ecba2760a9f2aa0d23d3acea2d722c9b51558c61b66264f6af16d16de3 23504 autocorpus_1.0.0-1.debian.tar.gz
+ d454a5de3b82e9dfd57c36d4faae500ca33333ba5e127494d36b001237b246f6 90214 autocorpus_1.0.0-1_i386.deb
+Files: 
+ ccb65a2cb7ecdcd36c0fbb85bc5c7e40 810 text optional autocorpus_1.0.0-1.dsc
+ 6dac74f31f79b4c5431f504beb55aa1e 41122 text optional autocorpus_1.0.0.orig.tar.gz
+ 17d46c556685233a1f9be867023fffbe 23504 text optional autocorpus_1.0.0-1.debian.tar.gz
+ 763d76115791f1fa6d17b898de983769 90214 text optional autocorpus_1.0.0-1_i386.deb
