@@ -13,7 +13,10 @@ ver=$( cat VERSION | grep -P -o "\d.\d+.*$" )
 
 echo "Releasing Autocorpus $ver"
 
-rm -r "releases/$ver"
+if [ "$1" != "--keep" ]; then
+    rm -r "releases/$ver"
+fi
+
 mkdir -p "releases/$ver"
 cd "releases/$ver"
 
@@ -22,10 +25,10 @@ src_name="autocorpus-$ver"
 mkdir -p "$src_name/bin"
 cd "$src_name"
 
-# all files we'll put in the tarball. Dirty, I know...
+# all files we'll put in the tarball. Ugly, I know...
 files=$( find "$main_dir" -type f | grep -v "/\\.\w" | grep -v "~" | grep -v "/data" | \
     grep -v "/scripts" | grep -v "\\.o" | grep -v "\\.pyc" | grep -v "TAGS" | grep -v -P "/man/.*.\d$" |
-    grep -v "/releases" | grep -v "/bin" | sort )
+    grep -v "/releases" | grep -v "/bin" | grep -v "/lib" | grep -v "debian/" | sort )
 
 for f in $files; do
     rel_name=${f/"$main_dir"/}
@@ -48,8 +51,8 @@ arch=$( uname -m )
 echo -e "\tarchitecture: $arch"
 
 tar xvf "$src_name.tar.gz" > /dev/null
-cd "$src_name/src"
-make > /dev/null
+cd "$src_name"
+make -j4 > /dev/null
 result=$?
 
 if [ $result -ne 0 ]; then
@@ -59,7 +62,6 @@ else
     echo "Build successful"
 fi 
 
-cd ..
 # remove source folder
 rm -r src
 cd ..
@@ -70,3 +72,19 @@ tar -czf "$bin_name.tar.gz" "$dist"
 
 echo "Binary tarball generated successfully"
 rm -r "$dist"
+
+
+echo "Building deb package..."
+cd "$main_dir/releases/$ver"
+mkdir -p "deb"
+cd deb
+tar xvf "../$src_name.tar.gz" > /dev/null
+cd "$src_name"
+echo | dh_make -c gpl3 -s -f "../../$src_name.tar.gz"
+
+# use custom package metadata
+cp -v "$main_dir"/debian/* debian/
+dpkg-buildpackage
+
+cd ..
+rm -rf "$src_name"

@@ -28,4 +28,3 @@ $(BIN)/wiki-articles: articles.py wiki.py
 
 clean:
 	rm -f *.o $(BIN)/wiki-textify $(BIN)/sentences $(BIN)/wiki-articles TAGS
- 

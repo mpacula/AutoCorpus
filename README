@@ -18,12 +18,20 @@ These are:
 
 Older versions *might* work, but have not been tested.
 
-Once you've verified that you have the prerequsutes, build autocorpus
-by calling make inside the 'src' directories.
+Once you've verified that you have the prerequisites, build autocorpus
+by calling make:
 
-    $ cd src; make; cd ..
+    $ make
 
 The binaries will be placed in the 'bin' directory.
+
+
+INSTALLING
+
+To install Autocorpus, build it first using the instructions in the
+previous section, then type "make install". Note that you need to be
+root for the installation to succeed, which on most desktop Linux
+distributions means you need to run "sudo make install".
  
 
 
