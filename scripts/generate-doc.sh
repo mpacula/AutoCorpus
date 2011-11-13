@@ -27,7 +27,7 @@ pages=$( ls *.html )
 
 if [[ "$1" == "--upload" ]]; then
     echo "Uploading..."
-    echo -e "mkdir autocorpus\ncd autocorpus\nmkdir $version\ncd $version\n \
+    echo -e "prompt\nmkdir autocorpus\ncd autocorpus\nmkdir $version\ncd $version\n \
              mkdir man\ncd man\nmdelete *" | ftp ftp.mpacula.com
     
     for page in $pages; do
