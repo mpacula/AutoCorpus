@@ -1,0 +1,15 @@
+Source: autocorpus
+Section: text
+Priority: optional
+Maintainer: Maciej Pacula <maciej.pacula@gmail.com>
+Build-Depends: debhelper (>= 8.0.0), libpcre3-dev
+Standards-Version: 3.9.2
+Homepage: http://mpacula.com/autocorpus
+#Vcs-Git: git://git.debian.org/collab-maint/autocorpus.git
+#Vcs-Browser: http://git.debian.org/?p=collab-maint/autocorpus.git;a=summary
+
+Package: autocorpus
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, libpcre3
+Description: automatic extraction of language corpora and language models
+ Autocorpus is a set of utilities that enable automatic extraction of language corpora and language models from publicly available datasets. For example, it provides the full set of tools to translate the entire English Wikipedia from a 30+GB XML file to a clean n-gram language model, all in a matter of a few hours.
