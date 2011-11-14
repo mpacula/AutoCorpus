@@ -26,7 +26,9 @@ ask "Would you like to extract, textify, extract sentences and tokenize Wikipedi
 if [ "$ans" = y ];
 then
     cd bin
-    pv ../data/source/enwiki-20110620-pages-articles.ascii.xml | \
+    mkdir -p ../data/wikipedia/clean
+    mkdir -p ../data/wikipedia/ngrams
+    pv ../data/wikipedia/enwiki-20110620-pages-articles.ascii.xml | \
         wiki-articles | tee ../data/wikipedia/clean/articles.txt | \
         wiki-textify -h | tee ../data/wikipedia/clean/textified.txt | \
         sentences | tee ../data/wikipedia/clean/sentences.txt | \
