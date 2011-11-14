@@ -24,7 +24,7 @@ install: all
 	for binary in `find $(BIN) -perm /u+x`; do cp -v $$binary $(DESTDIR)"/usr/bin"; done;
 	mkdir -p $(DESTDIR)"/usr/share/pyshared/autocorpus"
 	cp src/wikipedia/articles.py src/wikipedia/wiki.py $(DESTDIR)"/usr/share/pyshared/autocorpus"
-	ln -sf $(DESTDIR)"/usr/share/pyshared/autocorpus/articles.py" $(DESTDIR)"/usr/bin/wiki-articles"
+	ln -sf "/usr/share/pyshared/autocorpus/articles.py" $(DESTDIR)"/usr/bin/wiki-articles"
 	for sec in `seq 1 1 7`; do \
        if [ `ls man | grep "\.$$sec.gz" | wc -l )` -gt 0 ]; then \
 	        mkdir -p $(DESTDIR)"/usr/share/man/man$$sec"; cp -v man/*.$$sec.gz $(DESTDIR)"/usr/share/man/man$$sec"; \
