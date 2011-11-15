@@ -3,12 +3,12 @@
 # This script generates HTML documentation from 
 # the man pages.
 
-version="1.0"
-
 start_dir=$( pwd )
 main_dir="$( dirname "$0" )/.."
 cd "$main_dir"
 main_dir=$( pwd )
+
+version=$( cat VERSION | grep -P -o "\d.\d+.*$" )
 
 rm -f "$main_dir/man/html/*"
 
@@ -27,11 +27,11 @@ pages=$( ls *.html )
 
 if [[ "$1" == "--upload" ]]; then
     echo "Uploading..."
-    echo -e "prompt\nmkdir autocorpus\ncd autocorpus\nmkdir $version\ncd $version\n \
+    echo -e "prompt\nmkdir autocorpus\ncd autocorpus\nmkdir releases\ncd releases\nmkdir $version\ncd $version\n \
              mkdir man\ncd man\nmdelete *" | ftp ftp.mpacula.com
     
     for page in $pages; do
         echo $page
-        echo -e "cd autocorpus/$version/man\nput $page" | ftp ftp.mpacula.com
+        echo -e "cd autocorpus/releases/$version/man\nput $page" | ftp ftp.mpacula.com
     done
 fi

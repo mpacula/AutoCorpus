@@ -32,7 +32,7 @@ files=$( find "$main_dir" -type f | grep -v "/\\.\w" | grep -v "~" | grep -v "/d
     grep -v "/scripts" | grep -v "\\.o" | grep -v "\\.pyc" | grep -v "TAGS" | grep -v -P "/man/.*.\d$" |
     grep -v "/releases" | grep -v "/bin" | grep -v "/lib" | grep -v "debian/" | sort )
 
-for f in $files; do
+for f in $files "$main_dir/bin/ngrams-sort"; do
     rel_name=${f/"$main_dir"/}
     rel_name=${rel_name/#\//}
     echo -e "\t$rel_name"

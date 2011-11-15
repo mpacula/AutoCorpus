@@ -8,11 +8,11 @@ Homepage: http://mpacula.com/autocorpus
 Standards-Version: 3.9.2
 Build-Depends: debhelper (>= 8.0.0), libpcre3-dev
 Checksums-Sha1: 
- c323c72d06c2a0d3bfc208d8a0bc468410afa141 41118 autocorpus_1.0.0.orig.tar.gz
- e6804748f41f82bdcfacfb5233c9e5878b70ee54 23539 autocorpus_1.0.0-1.debian.tar.gz
+ 667479d75d00b633adb9e3151fd9d1d047ab8045 41265 autocorpus_1.0.0.orig.tar.gz
+ aa32e03cd7351e401fb0e0601d19b86337ed9771 23551 autocorpus_1.0.0-1.debian.tar.gz
 Checksums-Sha256: 
- 74b9515eb3cf637574ccddd0af7f3f9552b9a49333d5fca8c5d4c72d538efc10 41118 autocorpus_1.0.0.orig.tar.gz
- d5eaeb46bdc1aa77025d6251ec386ab58bf0b2c960004181b5250b5947966246 23539 autocorpus_1.0.0-1.debian.tar.gz
+ 9cff07449acf967e43383bc6791d7c4950a0e9c9107983e7ded6712a0089f0ee 41265 autocorpus_1.0.0.orig.tar.gz
+ 0dbea509bd59d7e2bea4448238bd3a170079f215269ada24055ffadafcc14ca5 23551 autocorpus_1.0.0-1.debian.tar.gz
 Files: 
- 01b037d63a0df062d067a79aaaaa619b 41118 autocorpus_1.0.0.orig.tar.gz
- 02562b4be82c3bafa1386b52c3ef0625 23539 autocorpus_1.0.0-1.debian.tar.gz
+ 1ddde2d822984d2ebe9bc4aa7f0cdb3d 41265 autocorpus_1.0.0.orig.tar.gz
+ 9af6c5dd75a96875e1b074536fd55a6f 23551 autocorpus_1.0.0-1.debian.tar.gz
