@@ -38,6 +38,7 @@
 #include <math.h>
 
 #include "Textifier.h"
+#include "utilities.h"
 
 using namespace std;
 
@@ -98,21 +99,6 @@ Textifier::~Textifier()
   pcre_free(re_format);
   pcre_free(re_heading);
   pcre_free(re_comment);
-}
-
-pcre* Textifier::makePCRE(const char* expr, int options)
-{
-  const char* error;
-  int erroffset;
-  pcre *re = pcre_compile(expr, options, &error, &erroffset, NULL);
-
-  if(re == NULL) {
-    ostringstream os;
-    os << "PCRE compilation failed at offset " << erroffset << ": "
-       << error << endl;
-    throw Error(os.str(), state.pos);
-  }
-  return re;
 }
 
 bool Textifier::getLinkBoundaries(int& start, int& end, int& next)

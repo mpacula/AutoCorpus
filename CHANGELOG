@@ -1,2 +1,6 @@
-Aurocorpus 1.0.0 - Sat, Nov 12, 2011
+Autocorpus 1.0.1 - Sat, Nov 19, 2011
+  * 'sentences' now does not break sentences on periods within
+    abbreviations, e.g. "U.S.A"
+
+Autocorpus 1.0.0 - Sat, Nov 12, 2011
   * Initial release

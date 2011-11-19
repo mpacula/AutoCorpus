@@ -1,8 +1,8 @@
 /*
     AutoCorpus: automatically extracts clean natural language corpora from
     publicly available datasets.
-
-    SentenceExtractor.h: see SentenceExtractor.cpp for a description.
+    
+    utilities.h: see utilities.cpp for details.
 
 
     
@@ -22,43 +22,30 @@
     You should have received a copy of the GNU Affero General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-#ifndef SentenceExtractor_h
-#define SentenceExtractor_h
 
-#include <string>
+#ifndef utilities_h
+#define utilities_h
+
+#include <sstream>
 #include <pcre.h>
-#include "PCREMatcher.h"
 
-typedef struct _ExtractorOptions
+struct Error
 {
-  bool separateParagraphs; // separate paragraphs with newlines in output?
-} ExtractorOptions;
-
-class SentenceExtractor
-{
- private:
-  const char* input;
-  size_t len;
+  std::string message;
   size_t pos;
-  std::string output;
-  ExtractorOptions opts;
-  PCREMatcher* abbreviationMatcher;
 
-  bool outEndsWith(const char*);
+  Error(std::string message, size_t pos)
+  {
+    this->message = message;
+    this->pos = pos;
+  }
 
-  char lastWrittenChar();
-  char peek();
-  char peek(size_t n);
-  size_t find(char ch, size_t len);
-  bool isLastWrittenChar(const char*);
-  bool isWS(char);
-  void newline(int);
-
- public:
-  SentenceExtractor(ExtractorOptions);
-  ~SentenceExtractor(); 
-  
-  std::string extract(const char*);  
+  Error offset(long delta_pos)
+  {
+    return Error(message, pos+delta_pos);
+  }
 };
 
-#endif // SentenceExtractor_h
+pcre* makePCRE(const char* expr, int options);
+
+#endif // utilities_h

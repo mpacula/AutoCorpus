@@ -30,7 +30,8 @@
 #include <math.h>
 #include <dirent.h>
 
-#include "Textifier.h"
+#include "Textifier.h" 
+#include "utilities.h"
 
 using namespace std;
 

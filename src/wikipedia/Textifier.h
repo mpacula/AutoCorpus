@@ -40,23 +40,6 @@ typedef struct _state
   std::string      groups[10]; // stores regexp matches
 } State;
 
-struct Error
-{
-  std::string message;
-  size_t pos;
-
-  Error(std::string message, size_t pos)
-  {
-    this->message = message;
-    this->pos = pos;
-  }
-
-  Error offset(long delta_pos)
-  {
-    return Error(message, pos+delta_pos);
-  }
-};
-
 class Textifier 
 {
 private:
@@ -92,7 +75,6 @@ private:
   std::string getErrorMessage(std::string name);
   std::string* match(std::string name, pcre* regexp);
 
-  pcre* makePCRE(const char* expr, int options);
   pcre* re_format;
   pcre* re_heading;
   pcre* re_comment;

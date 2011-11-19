@@ -23,7 +23,7 @@ $(BIN)/wiki-articles: articles.py wiki.py
 	cp wiki.py articles.py $(LIB)/
 	ln -fs ../lib/articles.py $(BIN)/wiki-articles
 
-%.o: %.cpp
+%.o: %.cpp %.h
 	$(COMPILE) -o $@ $<
 
 clean:

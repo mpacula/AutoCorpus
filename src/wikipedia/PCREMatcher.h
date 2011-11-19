@@ -2,10 +2,10 @@
     AutoCorpus: automatically extracts clean natural language corpora from
     publicly available datasets.
 
-    SentenceExtractor.h: see SentenceExtractor.cpp for a description.
+    PCREMatcher.h: see PCREMatcher.cpp for details.
 
 
-    
+
     Copyright (C) 2011 Maciej Pacula
 
 
@@ -22,43 +22,24 @@
     You should have received a copy of the GNU Affero General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-#ifndef SentenceExtractor_h
-#define SentenceExtractor_h
+#ifndef PCREMatcher_h
+#define PCREMatcher_h
 
-#include <string>
 #include <pcre.h>
-#include "PCREMatcher.h"
+#include <string>
 
-typedef struct _ExtractorOptions
-{
-  bool separateParagraphs; // separate paragraphs with newlines in output?
-} ExtractorOptions;
-
-class SentenceExtractor
+class PCREMatcher
 {
  private:
-  const char* input;
-  size_t len;
-  size_t pos;
-  std::string output;
-  ExtractorOptions opts;
-  PCREMatcher* abbreviationMatcher;
-
-  bool outEndsWith(const char*);
-
-  char lastWrittenChar();
-  char peek();
-  char peek(size_t n);
-  size_t find(char ch, size_t len);
-  bool isLastWrittenChar(const char*);
-  bool isWS(char);
-  void newline(int);
-
+    std::string groups[10];
+    pcre* regexp;
  public:
-  SentenceExtractor(ExtractorOptions);
-  ~SentenceExtractor(); 
-  
-  std::string extract(const char*);  
+    PCREMatcher(std::string pcre, const int flags);
+    ~PCREMatcher();
+    std::string& operator[] (const int index);
+    bool match(const std::string& str);
+    bool match(const char* str, const int len);
+
 };
 
-#endif // SentenceExtractor_h
+#endif

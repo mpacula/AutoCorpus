@@ -26,18 +26,22 @@
 */
 #include <string.h>
 #include <string>
+#include <iostream>
 
 #include "SentenceExtractor.h"
+#include "utilities.h"
 
 using namespace std;
 
 SentenceExtractor::SentenceExtractor(ExtractorOptions opts) 
 {
   this->opts = opts;
+  this->abbreviationMatcher = new PCREMatcher("^[^\\s]\\.(\\s*[^\\s]\\.)+\\s+", 0);
 }
 
 SentenceExtractor::~SentenceExtractor() 
 {
+  delete abbreviationMatcher;
 }
 
 char SentenceExtractor::lastWrittenChar() 
@@ -73,6 +77,14 @@ char SentenceExtractor::peek(size_t n) {
   return i == n ? input[pos+i] : '\0';
 }
 
+size_t SentenceExtractor::find(char ch, size_t len) {
+  size_t i = pos;
+  while(i < pos+len && input[i] != ch && input[i] != '\0') {
+    i++;
+  }
+  return i;
+}  
+
 void SentenceExtractor::newline(int count) 
 {
   if(output.size() == 0)
@@ -97,8 +109,18 @@ string SentenceExtractor::extract(const char* input)
   this->output.clear();
   // Reserve 2MB for output. Most wikipedia articles will fit without resizing.
   this->output.reserve(2*1024*1024); 
+  this->len = strlen(input);
 
   while(input[pos] != '\0') {
+    if(abbreviationMatcher->match(&input[pos], len-pos)) {
+      string& abbrv = (*abbreviationMatcher)[0];
+       output += abbrv;
+      pos += abbrv.length();
+      if(isupper(input[pos]))
+        newline(1);
+      continue;
+    }
+
     const char ch = input[pos];
     switch(ch) {
     case '\n':
@@ -106,26 +128,24 @@ string SentenceExtractor::extract(const char* input)
         newline(2);
         pos++;
       }
-      else if(!isLastWrittenChar(" \t")) {
+      else if(!isLastWrittenChar(" \t\n") && output.length() > 0) {
         output += ' ';
       }
       break;
       
     case '.':
       output += ch;
-      if((isWS(peek()) || peek() == '"' || peek() == '\'') &&
-         !outEndsWith("e.g.") &&
-         !outEndsWith("i.e.")) {
-        if(peek(3) == '.') { // One letter "sentence": most likely an abbreviation
-          output += input[pos+1];
-          output += input[pos+2];
-          output += input[pos+3];
-          pos += 3;
-        }
-        else {
-          if(peek()=='"' || peek()=='\'') {         
+      if((isWS(peek()) || peek() == '"' || peek() == '\'')) {
+        const size_t nextPeriod = find('.', 5);
+        if(false) { // a "sentence" of < 3 letters. Probably an abbreviation.
+          while(pos <= nextPeriod) {
             output += input[++pos];
           }
+          continue;
+        }
+        else {
+          if(peek()=='"' || peek()=='\'')    
+            output += input[++pos];
           
           newline(1);
         }
@@ -140,7 +160,7 @@ string SentenceExtractor::extract(const char* input)
 
     case ' ':
     case '\t':
-      if(pos == 0 || !isLastWrittenChar(" \t\r\n"))
+      if(output.length() > 0 && !isLastWrittenChar(" \t\r\n"))
         output += ch;
       break;
 
