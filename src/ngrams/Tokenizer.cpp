@@ -131,6 +131,8 @@ public:
           // in numbers, e.g. 1,000,000
           if(ch == ',' && isDigit(lastChar) && isDigit(input[i+1]))
             character(ch);
+          else if(ch == '.' && !isWS(input[i+1]) && input[i+1] != '\0' && input[i+1] != '.')
+            character('.');
           else
             space();
         }
