@@ -5,6 +5,10 @@ main_dir="$( dirname "$0" )/.."
 cd "$main_dir"
 main_dir=$( pwd )
 
+# set path to include bin/ first, so that we use the latest
+# compiled versions of autocorpus tools
+PATH="$main_dir/bin":"$PATH"
+
 function ask() {
     echo -n "$1 [y/N]: "
     read ans
@@ -34,6 +38,15 @@ then
         sentences | tee ../data/wikipedia/clean/sentences.txt | \
         tokenize | tee ../data/wikipedia/clean/tokenized.txt > /dev/null
     cd ..
+fi
+
+ask "Would you like to generate sample data files?"
+if [ "$ans" = y ];
+then
+    cd data/wikipedia/clean
+    cd "$main_dir"
+    cd data/wikipedia/ngrams
+    cd "$main_dir"
 fi
 
 ask "Would you like to generate unigrams?"

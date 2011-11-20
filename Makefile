@@ -1,12 +1,15 @@
-DIRS = src/wikipedia src/ngrams
+DIRS = src/wikipedia src/ngrams src/common
 BIN = bin
 
 all: wikipedia ngrams
 
-wikipedia: force_look
+common:
+	cd src/common; $(MAKE) $(MFLAGS)
+
+wikipedia: force_look common
 	cd src/wikipedia; $(MAKE) $(MFLAGS)
 
-ngrams: force_look
+ngrams: force_look common
 	cd src/ngrams; $(MAKE) $(MFLAGS)
 
 doc:

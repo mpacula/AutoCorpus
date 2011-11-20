@@ -1,9 +1,10 @@
 CC = g++
 LIBS = -lpcre
-CFLAGS = -Wall -O3
-COMPILE = $(CC) $(CFLAGS) -c
+CFLAGS = -Wall -O3 -I "../common"
+COMMON_OBJ = $(wildcard ../common/*.o)
+COMPILE = $(CC) $(CFLAGS) -c 
 ALL_OBJFILES = $(patsubst %.cpp,%.o,$(wildcard *.cpp))
-OBJFILES := $(filter-out Sentences.o Textify.o, $(ALL_OBJFILES))
+OBJFILES = $(filter-out Sentences.o Textify.o, $(ALL_OBJFILES)) $(COMMON_OBJ)
 BIN = ../../bin
 LIB = ../../lib
 
@@ -23,7 +24,7 @@ $(BIN)/wiki-articles: articles.py wiki.py
 	cp wiki.py articles.py $(LIB)/
 	ln -fs ../lib/articles.py $(BIN)/wiki-articles
 
-%.o: %.cpp %.h
+%.o: %.cpp
 	$(COMPILE) -o $@ $<
 
 clean:

@@ -34,6 +34,8 @@
 #include <iostream>
 #include <string>
 
+#include "PCREMatcher.h"
+
 #define PUNCTUATION ".,!?()&@()[]{}/\\\"'#:;<>^”*=-−—\x93"
 
 using namespace std;
@@ -44,6 +46,8 @@ private:
   const char* keep; // punctuation to include in output  
   bool includeParens;
   char lastChar;
+  PCREMatcher* abbreviationMatcher;
+  
   
   inline bool isPunctuation(char ch) 
   {
@@ -68,7 +72,7 @@ private:
     return isspace(ch);
   }
 
-  inline void space()
+  inline void printSpace()
   {
     if(!isWS(lastChar)) {
       fputc(' ', stdout);
@@ -76,22 +80,45 @@ private:
     }
   }
 
-  inline void character(char ch)
+  inline void printChar(char ch)
   {
     fputc(ch, stdout);
     lastChar = ch;
-  }
+   }
   
+  inline void printString(string& input) {
+    for(size_t i = 0; i < input.length(); i++) {
+      const char ch = input[i];
+      if(ch == ' ')
+        printSpace();
+      else
+        printChar(ch);
+    }
+  }
+
 public:
   Tokenizer(const char* keep, bool includeParens) {
     this->keep = keep;
     this->includeParens = includeParens;
     this->lastChar = '\0';
+    this->abbreviationMatcher = new PCREMatcher("^\\w\\.(\\s*\\w\\.)+(\\s|$)+", 0);
   }
 
-  void tokenize(string input) {
+  ~Tokenizer() {
+    delete abbreviationMatcher;
+  }
+
+  void tokenize(string& input) {
     int parenLevel = 0;
     for(size_t i=0; i < input.length(); i++) {
+      // first check for abbreviations like "U.S."
+      if(abbreviationMatcher->match(&(input.c_str()[i]), input.length()-i)) {
+        string& abbrv = (*abbreviationMatcher)[0];
+        printString(abbrv);
+        i += abbrv.length()-1;
+        continue;
+      }
+
       char ch = input[i];
       switch(ch) {
       case '(':
@@ -99,9 +126,9 @@ public:
         if(!includeParens) // skip over the '('
           continue;
         else {
-          space();
-          character('(');
-          space();
+          printSpace();
+          printChar('(');
+          printSpace();
           continue;
         }
         break;
@@ -110,9 +137,9 @@ public:
         if(!includeParens) // skip over the ')'
           continue;
         else {
-          space();
-          character(')');
-          space();
+          printSpace();
+          printChar(')');
+          printSpace();
           continue;
         }
         break;
@@ -120,28 +147,26 @@ public:
       
       if(parenLevel == 0 || includeParens) {
         if(isWS(ch))
-          space();
+          printSpace();
         else if(isPunctuation(ch) && isKeep(ch)) {
-          space();
-          character(ch);
-          space();
+          printSpace();
+          printChar(ch);
+          printSpace();
         }
         else if(isPunctuation(ch)) {
           // don't break words on commas delimiting orders of magnitude
           // in numbers, e.g. 1,000,000
           if(ch == ',' && isDigit(lastChar) && isDigit(input[i+1]))
-            character(ch);
-          else if(ch == '.' && !isWS(input[i+1]) && input[i+1] != '\0' && input[i+1] != '.')
-            character('.');
+            printChar(ch);
           else
-            space();
+            printSpace();
         }
         else if(!isPunctuation(ch))
-          character(tolower(ch));
+          printChar(tolower(ch));
       }
     }
 
-    character('\n');
+    printChar('\n');
   } // end of tokenize()
 };
 
