@@ -46,8 +46,7 @@ private:
   const char* keep; // punctuation to include in output  
   bool includeParens;
   char lastChar;
-  PCREMatcher* abbreviationMatcher;
-  
+  PCREMatcher* abbreviationMatcher;  
   
   inline bool isPunctuation(char ch) 
   {
@@ -92,7 +91,7 @@ private:
       if(ch == ' ')
         printSpace();
       else
-        printChar(ch);
+        printChar(tolower(ch));
     }
   }
 
