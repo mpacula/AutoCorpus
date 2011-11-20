@@ -28,6 +28,9 @@
 
 #include <sstream>
 #include <pcre.h>
+#include <string.h>
+
+#define NGRAM_SEPARATOR '\t'
 
 struct Error
 {
@@ -47,5 +50,7 @@ struct Error
 };
 
 pcre* makePCRE(const char* expr, int options);
+long findchr(const char* str, char ch);
+char* deconstructNGram(const char* str, char* ngram, long* count);
 
 #endif // utilities_h
