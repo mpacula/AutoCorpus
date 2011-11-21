@@ -5,6 +5,8 @@ main_dir="$( dirname "$0" )/.."
 cd "$main_dir"
 main_dir=$( pwd )
 
+source scripts/read-netrc.sh
+
 # set path to include bin/ first, so that we use the latest
 # compiled versions of autocorpus tools
 PATH="$main_dir/bin":"$PATH"
@@ -20,12 +22,6 @@ function ask() {
     fi
 }
 
-ask "Generating corpora: existing data will be erased. Are you sure you want to continue?"
-if [ "$ans" != y ];
-then
-    exit 0
-fi
-
 ask "Would you like to extract, textify, extract sentences and tokenize Wikipedia?"
 if [ "$ans" = y ];
 then
@@ -38,15 +34,6 @@ then
         sentences | tee ../data/wikipedia/clean/sentences.txt | \
         tokenize | tee ../data/wikipedia/clean/tokenized.txt > /dev/null
     cd ..
-fi
-
-ask "Would you like to generate sample data files?"
-if [ "$ans" = y ];
-then
-    cd data/wikipedia/clean
-    cd "$main_dir"
-    cd data/wikipedia/ngrams
-    cd "$main_dir"
 fi
 
 ask "Would you like to generate unigrams?"
@@ -108,5 +95,30 @@ then
     cd ..
 fi
 
+ask "Would you like to generate sample data files?"
+if [ "$ans" = y ];
+then
+    cd data/wikipedia/clean
+    head -n 100000 tokenized.txt | ascii2uni > clean-sample.txt
+    cd "$main_dir"
+    cd data/wikipedia/ngrams
+    for f in $( ls *grams.txt ); do
+        target="${f/.txt/-sample.txt}"
+        echo -e "\t$f -> $target"
+        head -n 10000 "$f" > "$target"
+        echo "# end of sample" >> "$target"
+    done
+    cd "$main_dir"
+fi
+
+ask "Would you like to upload corpora to FTP?"
+if [ "$ans" = y ];
+then
+    cd "$main_dir/data/wikipedia"
+    for f in $( find . -iname "*sample.txt" ) $( find ngrams -iname "*.txt.bz2" ); do
+        echo -e "\t$f"
+        ftpup autocorpus/releases/1.0.1/wikipedia "$f"
+    done
+fi
 
 cd "$start_dir"
