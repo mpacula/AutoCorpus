@@ -1,0 +1,32 @@
+Format: 1.8
+Date: Sat, 19 Nov 2011 18:53:10 -0500
+Source: autocorpus
+Binary: autocorpus
+Architecture: source amd64
+Version: 1.0.1-1
+Distribution: unstable
+Urgency: low
+Maintainer: Maciej Pacula <maciej.pacula@gmail.com>
+Changed-By: Maciej Pacula <maciej.pacula@gmail.com>
+Description: 
+ autocorpus - automatic extraction of language corpora and language models
+Changes: 
+ autocorpus (1.0.1-1) unstable; urgency=low
+ .
+   * 'sentences' now does not break sentences on periods within
+     abbreviations, e.g. "U.S.A"
+Checksums-Sha1: 
+ 45a156861932770b18cc090d23a39fc0cb888fba 810 autocorpus_1.0.1-1.dsc
+ 2f6c3114d2f54f2566f13c6fa901398b5ab14d3b 42663 autocorpus_1.0.1.orig.tar.gz
+ 5e111f2ee6aa55ea3a8b08470c6016a755cd0ad9 23615 autocorpus_1.0.1-1.debian.tar.gz
+ 12f8655240f699090c52bb79266132327d127bde 91058 autocorpus_1.0.1-1_amd64.deb
+Checksums-Sha256: 
+ 2bc61fa832a372f5e2a5eb0d5a2b8a8825a2f10bcd232e3df84f2013ff713430 810 autocorpus_1.0.1-1.dsc
+ 8d6487d0dca745e97da32c09bd34963287cd790a7c880780b2b163ad7219d954 42663 autocorpus_1.0.1.orig.tar.gz
+ 5ac3e5060458387ef31e243c2fdd8cfd87b177409c0aa0047f3596372c255e1b 23615 autocorpus_1.0.1-1.debian.tar.gz
+ c849f4639cd17e0e7c309838630b90cd8132746b57e565f25a792e34091a81e3 91058 autocorpus_1.0.1-1_amd64.deb
+Files: 
+ d680fb19e6adaa6ba2ffff39ab2eb174 810 text optional autocorpus_1.0.1-1.dsc
+ 9961b667cfc7c73ba368ef3879793500 42663 text optional autocorpus_1.0.1.orig.tar.gz
+ 4f1b0bf9a7c10140a00387a164f2bfae 23615 text optional autocorpus_1.0.1-1.debian.tar.gz
+ 97a65d7585028477c9d3d9dfe048ea42 91058 text optional autocorpus_1.0.1-1_amd64.deb
