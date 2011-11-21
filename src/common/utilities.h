@@ -31,6 +31,7 @@
 #include <string.h>
 
 #define NGRAM_SEPARATOR '\t'
+#define ABBREVIATION_REGEX "^(\\s*\\w\\.){2,}\\w?(\\s|$)+"
 
 struct Error
 {

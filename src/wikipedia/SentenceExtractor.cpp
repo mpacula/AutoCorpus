@@ -36,7 +36,7 @@ using namespace std;
 SentenceExtractor::SentenceExtractor(ExtractorOptions opts) 
 {
   this->opts = opts;
-  this->abbreviationMatcher = new PCREMatcher("^[^\\s]\\.(\\s*[^\\s]\\.)+\\s+", 0);
+  this->abbreviationMatcher = new PCREMatcher(ABBREVIATION_REGEX, 0);
 }
 
 SentenceExtractor::~SentenceExtractor() 

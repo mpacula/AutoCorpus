@@ -35,6 +35,7 @@
 #include <string>
 
 #include "PCREMatcher.h"
+#include "utilities.h"
 
 #define PUNCTUATION ".,!?()&@()[]{}/\\\"'#:;<>^”*=-−—\x93"
 
@@ -100,7 +101,7 @@ public:
     this->keep = keep;
     this->includeParens = includeParens;
     this->lastChar = '\0';
-    this->abbreviationMatcher = new PCREMatcher("^\\w\\.(\\s*\\w\\.)+(\\s|$)+", 0);
+    this->abbreviationMatcher = new PCREMatcher(ABBREVIATION_REGEX, 0);
   }
 
   ~Tokenizer() {
