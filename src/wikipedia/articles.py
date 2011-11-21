@@ -28,7 +28,6 @@
 
 import sys
 import os
-import numpy
 import re
 import codecs
 import xml.parsers.expat as sax
