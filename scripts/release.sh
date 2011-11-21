@@ -97,19 +97,7 @@ dpkg-buildpackage
 cd ..
 rm -rf "$src_name"
 
+cd "$main_dir"
 if [[ "$@" == *--upload* ]]; then
-    echo "Uploading documentation..."
-    cd "$main_dir"
-    scripts/generate-doc.sh --upload
-
-    echo "Uploading binaries..."
-    cd "$main_dir/releases/$ver/"
-    for f in $( ls *.tar.gz ); do
-        ftpup "autocorpus/releases/$ver/" "$f"
-    done
-
-    cd "$main_dir/releases/$ver/deb"
-    for f in $( ls *.deb ); do
-        ftpup "autocorpus/releases/$ver/debian" "$f"
-    done
+    ./bin/upload-binaries.sh
 fi
