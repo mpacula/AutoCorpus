@@ -116,7 +116,9 @@ string SentenceExtractor::extract(const char* input)
       string& abbrv = (*abbreviationMatcher)[0];
        output += abbrv;
       pos += abbrv.length();
-      if(isupper(input[pos]))
+      if(isupper(input[pos]) && abbrv[abbrv.length()-1] == '.'
+         && abbrv.find("i.e") == string::npos
+         && abbrv.find("e.g") == string::npos)
         newline(1);
       continue;
     }
