@@ -1,0 +1,87 @@
+# This file consists of line pairs: command + expected output, separated
+# by dashes.
+#
+# The test driver executes the commands and verifies their output
+# against the expected one.
+
+
+#                     SENTENCES
+
+echo "This is a test. This is another test" | sentences
+This is a test.
+This is another test
+--
+
+echo "We live in the U.S. which is a country in the Northern Hemisphere. Second sectence." | sentences
+We live in the U.S. which is a country in the Northern Hemisphere.
+Second sectence.
+--
+
+echo "We live in the U.S which is a country in the Northern Hemisphere. Second sectence." | sentences
+We live in the U.S which is a country in the Northern Hemisphere.
+Second sectence.
+--
+
+echo "Test of e.g. and e.g and i.e. and i.e." | sentences
+Test of e.g. and e.g and i.e. and i.e.
+--
+
+echo "Programming languages, e.g. Scheme and Python." | sentences
+Programming languages, e.g. Scheme and Python.
+--
+
+echo "Programming languages, e.g. Scheme and Python.   Programming languages, e.g. Scheme and Python." | sentences
+Programming languages, e.g. Scheme and Python.
+Programming languages, e.g. Scheme and Python.
+--
+
+echo "John W. Doe Jr. went to college in Boston." | sentences
+John W. Doe Jr. went to college in Boston.
+--
+
+echo "F.D.A is a U.s. gov't agency. F.D.A is a U.s. gov't agency." | sentences
+F.D.A is a U.s. gov't agency.
+F.D.A is a U.s. gov't agency.
+--
+
+
+
+#                     TOKENIZE
+
+
+printf "This is a test.\nThis is another test" | tokenize
+this is a test
+this is another test
+--
+
+printf "We live in the U.S. which is a country in the Northern Hemisphere.\nSecond sectence." | tokenize
+we live in the u.s. which is a country in the northern hemisphere
+second sectence
+--
+
+printf "We live in the U.S which is a country in the Northern Hemisphere.   \n  Second sectence." | tokenize
+we live in the u.s which is a country in the northern hemisphere
+second sectence
+--
+
+printf "Test of e.g. and e.g and i.e. and i.e." | tokenize
+test of e.g. and e.g and i.e. and i.e.
+--
+
+printf "Programming languages, e.g. Scheme and Python." | tokenize
+programming languages e.g. scheme and python
+--
+
+printf "Programming languages, e.g. Scheme and Python. \n  Programming languages, e.g. Scheme and Python." | tokenize
+programming languages e.g. scheme and python
+programming languages e.g. scheme and python
+--
+
+printf "John W. Doe Jr. went to college in Boston." | tokenize
+john w. doe jr. went to college in boston
+--
+
+printf "F.D.A is a U.s. gov't agency. \n\nF.D.A. is a U.s. gov't agency." | tokenize
+f.d.a is a u.s. gov't agency
+
+f.d.a. is a u.s. gov't agency

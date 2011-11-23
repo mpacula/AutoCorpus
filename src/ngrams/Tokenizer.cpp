@@ -112,7 +112,7 @@ public:
     int parenLevel = 0;
     for(size_t i=0; i < input.length(); i++) {
       // first check for abbreviations like "U.S."
-      if(abbreviationMatcher->match(&(input.c_str()[i]), input.length()-i)) {
+      if((i == 0 || isWS(input[i-1])) && abbreviationMatcher->match(&(input.c_str()[i]), input.length()-i)) {
         string& abbrv = (*abbreviationMatcher)[0];
         printString(abbrv);
         i += abbrv.length()-1;

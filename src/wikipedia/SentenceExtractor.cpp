@@ -112,9 +112,9 @@ string SentenceExtractor::extract(const char* input)
   this->len = strlen(input);
 
   while(input[pos] != '\0') {
-    if(abbreviationMatcher->match(&input[pos], len-pos)) {
+    if((pos == 0 || isWS(input[pos-1])) && abbreviationMatcher->match(&input[pos], len-pos)) {
       string& abbrv = (*abbreviationMatcher)[0];
-       output += abbrv;
+      output += abbrv;
       pos += abbrv.length();
       if(isupper(input[pos]) && abbrv[abbrv.length()-1] == '.'
          && abbrv.find("i.e") == string::npos
