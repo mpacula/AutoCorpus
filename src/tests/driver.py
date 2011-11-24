@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 """
     AutoCorpus: automatically extracts clean natural language corpora from
     publicly available datasets.
@@ -22,7 +24,6 @@
     You should have received a copy of the GNU Affero General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-#!/usr/bin/env python
 
 import sys
 from subprocess import check_output
