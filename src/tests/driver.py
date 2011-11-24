@@ -26,8 +26,17 @@
 """
 
 import sys
-from subprocess import check_output
+import subprocess
 from optparse import OptionParser
+
+# poor man's check_output for python < 2.7
+def execute(cmd):
+     process = subprocess.Popen(cmd, stdout=subprocess.PIPE, shell=True)
+     output, err = process.communicate()
+     ret = process.poll()
+     if ret != 0:
+         raise subprocess.CalledProcessError(ret, cmd, output=output)
+     return output
 
 def stripLines(text):
     lines = text.split('\n')
@@ -38,7 +47,7 @@ def stripLines(text):
 
 def performTest(command, expectedOutput):
     print "> " + command
-    output = check_output(command, shell=True)
+    output = execute(command)
     output = stripLines(output.strip())
     expectedOutput = stripLines(expectedOutput.strip())
     print output + "\n"
