@@ -77,7 +77,12 @@ int main(int argc, char** argv)
       char* plaintext = new char[2*markup_len+1];
       try {
         tf.textify(input.c_str(), markup_len, plaintext, 2*markup_len);
-        cout << plaintext << endl;
+        // skip leading whitespace (if any)
+        char* textStart = plaintext;
+        while(*textStart == '\n' || *textStart == '\r' || *textStart == ' ') {
+          textStart++;
+        }
+        cout << textStart << endl;
         cout << '\f' << endl;
       }
       catch(Error err) {

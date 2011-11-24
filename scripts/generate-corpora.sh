@@ -22,6 +22,19 @@ function ask() {
     fi
 }
 
+ask "Would you like to extract, textify, extract sentences and tokenize a small Wikipedia excerpt?"
+if [ "$ans" = y ];
+then
+    cd bin
+    mkdir -p ../data/wikipedia/clean-sample
+    pv ../data/wikipedia/enwiki-20110620-pages-articles.ascii.xml | head -n 100000 | \
+        wiki-articles | tee ../data/wikipedia/clean-sample/articles.txt | \
+        wiki-textify -h | tee ../data/wikipedia/clean-sample/textified.txt | \
+        sentences | tee ../data/wikipedia/clean-sample/sentences.txt | \
+        tokenize | tee ../data/wikipedia/clean-sample/tokenized.txt > /dev/null
+    cd ..
+fi
+
 ask "Would you like to extract, textify, extract sentences and tokenize Wikipedia?"
 if [ "$ans" = y ];
 then

@@ -53,23 +53,28 @@ char* substr(char* dest, const char* src, int start, int len, int n)
   return dest;
 }
 
-bool isPrefix(const char* str, const char* sub, const size_t n)
+bool isPrefix(const char* str, const char* sub, const size_t n, bool ignoreCase)
 {
   size_t i = 0;
   while(sub[i] != '\0' &&
         i < n) {
-    if(str[i] != sub[i])
+    if((str[i] != sub[i] && !ignoreCase) || (tolower(str[i]) != tolower(sub[i])))
       return false;
     i++;
   }
   return i == strlen(sub);
 }
 
-bool isSubstr(const char* str, const char* substr, int n)
+bool isPrefix(const char* str, const char* sub, const size_t n)
+{
+  return isPrefix(str, sub, n, false);
+}
+
+bool isSubstr(const char* str, const char* substr, int n, bool ignoreCase)
 {
   const int m = strlen(substr);
   while(m <= n) {
-    if(isPrefix(str, substr, n))
+    if(isPrefix(str, substr, n, ignoreCase))
       return true;
 
     str = &str[1];
@@ -77,6 +82,11 @@ bool isSubstr(const char* str, const char* substr, int n)
   }
   
   return false;
+}
+
+bool isSubstr(const char* str, const char* substr, int n)
+{
+  return isSubstr(str, substr, n, false);
 }
 
 Textifier::Textifier()
@@ -234,12 +244,13 @@ void Textifier::doLink()
     char contents[end-start+1];
     substr(contents, state.markup, start, end-start, state.N);
 
-    // is this a file link? if so, put it in its own paragraph
-    const bool fileLink = isSubstr(&state.markup[state.pos], "File:", start-state.pos);
-    if(fileLink) {
+    // is this a file/image link? if so, put it in its own paragraph
+    const bool fileLink = isSubstr(&state.markup[state.pos], "File:", start-state.pos, true);
+    const bool imageLink = isSubstr(&state.markup[state.pos], "Image:", start-state.pos, true);
+    if(fileLink || imageLink) {
       newline(2);
     }
-    
+
     size_t recursive_bytes_written = 0;
     try {
       recursive_bytes_written = textify(contents, end-start,
@@ -260,7 +271,7 @@ void Textifier::doLink()
 
     state.pos = next;
 
-    if(fileLink) {
+    if(fileLink || imageLink) {
       newline(2);
     }
   } else {
@@ -391,9 +402,6 @@ void Textifier::ignoreNested(string name, char open, char close)
 
 void Textifier::newline(int count) 
 {
-  if(state.pos_out == 0)
-    return;
-
   for(int i = state.pos_out-1; i >= 0 && state.out[i] == '\n'; i--, count--);  
 
   while(count-- > 0) {

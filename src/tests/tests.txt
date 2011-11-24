@@ -4,8 +4,28 @@
 # The test driver executes the commands and verifies their output
 # against the expected one.
 
+#                    TEXTIFY
 
-#                     SENTENCES
+printf "this is a test [[Image:aaa|a]] another test\n\f" | wiki-textify
+this is a test 
+
+a
+
+ another test
+--
+printf "this is a test [[File:aaa|a]] another test\n\f" | wiki-textify
+this is a test 
+
+a
+
+ another test
+--
+printf "this is a test [[aaa|a]] another test\n\f" | wiki-textify
+this is a test a another test
+--
+
+
+#                    SENTENCES
 
 echo "This is a test. This is another test" | sentences
 This is a test.
@@ -44,6 +64,25 @@ F.D.A is a U.s. gov't agency.
 F.D.A is a U.s. gov't agency.
 --
 
+echo "For English anarchist William Godwin education was \"the main means by which change would be achieved.\" Godwin saw that the main goal of education should be the promotion of happiness" | sentences
+For English anarchist William Godwin education was "the main means by which change would be achieved."
+Godwin saw that the main goal of education should be the promotion of happiness
+--
+
+echo "Autistic toddlers differ more strikingly from social norms; for example, they have less eye contact and turn taking, and do not have the ability to use simple movements to express themselves, such as the deficiency to point at things." | sentences
+Autistic toddlers differ more strikingly from social norms;
+for example, they have less eye contact and turn taking, and do not have the ability to use simple movements to express themselves, such as the deficiency to point at things.
+--
+
+echo "beyond the specific factions of anarchist thought is philosophical anarchism which embodies the theoretical stance that the state lacks moral legitimacy without accepting the imperative of revolution to eliminate it. a component especially of individualist anarchism philosophical anarchism may accept the existence of a minimal state as unfortunate and usually temporary necessary evil but argue that citizens do not have a moral obligation to obey the state when its laws conflict with individual autonomy" | sentences
+beyond the specific factions of anarchist thought is philosophical anarchism which embodies the theoretical stance that the state lacks moral legitimacy without accepting the imperative of revolution to eliminate it.
+a component especially of individualist anarchism philosophical anarchism may accept the existence of a minimal state as unfortunate and usually temporary necessary evil but argue that citizens do not have a moral obligation to obey the state when its laws conflict with individual autonomy 
+--
+
+echo "especially in the United States after World War II. The term is sometimes used more narrowly in reference to the Asia-Pacific region." | sentences
+especially in the United States after World War II.
+The term is sometimes used more narrowly in reference to the Asia-Pacific region.
+--
 
 
 #                     TOKENIZE
@@ -85,3 +124,9 @@ printf "F.D.A is a U.s. gov't agency. \n\nF.D.A. is a U.s. gov't agency." | toke
 f.d.a is a u.s. gov't agency
 
 f.d.a. is a u.s. gov't agency
+--
+
+printf "Autistic toddlers differ more strikingly from social norms;\nfor example, they have less eye contact and turn taking, and do not have the ability to use simple movements to express themselves, such as the deficiency to point at things." | tokenize
+autistic toddlers differ more strikingly from social norms
+for example they have less eye contact and turn taking and do not have the ability to use simple movements to express themselves such as the deficiency to point at things
+--

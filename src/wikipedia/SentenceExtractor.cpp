@@ -138,24 +138,16 @@ string SentenceExtractor::extract(const char* input)
     case '.':
       output += ch;
       if((isWS(peek()) || peek() == '"' || peek() == '\'')) {
-        const size_t nextPeriod = find('.', 5);
-        if(false) { // a "sentence" of < 3 letters. Probably an abbreviation.
-          while(pos <= nextPeriod) {
-            output += input[++pos];
-          }
-          continue;
-        }
-        else {
-          if(peek()=='"' || peek()=='\'')    
-            output += input[++pos];
+        if(peek()=='"' || peek()=='\'')    
+          output += input[++pos];
           
-          newline(1);
-        }
+        newline(1);
       }
       break;
 
     case '?':
     case '!':
+    case ';':
       output += ch;
       newline(1);
       break;      
