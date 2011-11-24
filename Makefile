@@ -12,7 +12,7 @@ wikipedia: force_look common
 ngrams: force_look common
 	cd src/ngrams; $(MAKE) $(MFLAGS)
 
-test: force_look
+test: all force_look
 	cd src/tests; PATH="../../bin/:$$PATH"; ./driver.py tests.txt
 
 doc:
