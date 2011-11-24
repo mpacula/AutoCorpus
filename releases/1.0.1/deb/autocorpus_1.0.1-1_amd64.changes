@@ -16,17 +16,17 @@ Changes:
    * 'sentences' now does not break sentences on periods within
      abbreviations, e.g. "U.S.A"
 Checksums-Sha1: 
- 45a156861932770b18cc090d23a39fc0cb888fba 810 autocorpus_1.0.1-1.dsc
- 2f6c3114d2f54f2566f13c6fa901398b5ab14d3b 42663 autocorpus_1.0.1.orig.tar.gz
- 5e111f2ee6aa55ea3a8b08470c6016a755cd0ad9 23615 autocorpus_1.0.1-1.debian.tar.gz
- 12f8655240f699090c52bb79266132327d127bde 91058 autocorpus_1.0.1-1_amd64.deb
+ 259eb9aa174127b5e45c1788c6510116709f4688 810 autocorpus_1.0.1-1.dsc
+ dbbd32427abd98c7aca2c302040853f4eff921b1 46164 autocorpus_1.0.1.orig.tar.gz
+ 489616ebaf0e3c75533284b42b4521e11284f644 23377 autocorpus_1.0.1-1.debian.tar.gz
+ 152cc3350729ce8130b3031eee30c77f9d9ac9f1 105702 autocorpus_1.0.1-1_amd64.deb
 Checksums-Sha256: 
- 2bc61fa832a372f5e2a5eb0d5a2b8a8825a2f10bcd232e3df84f2013ff713430 810 autocorpus_1.0.1-1.dsc
- 8d6487d0dca745e97da32c09bd34963287cd790a7c880780b2b163ad7219d954 42663 autocorpus_1.0.1.orig.tar.gz
- 5ac3e5060458387ef31e243c2fdd8cfd87b177409c0aa0047f3596372c255e1b 23615 autocorpus_1.0.1-1.debian.tar.gz
- c849f4639cd17e0e7c309838630b90cd8132746b57e565f25a792e34091a81e3 91058 autocorpus_1.0.1-1_amd64.deb
+ 6bafd757387fe9f9f92e22ee333ecbe53f7ba1fc3000a6001d93fb86f6c9769e 810 autocorpus_1.0.1-1.dsc
+ 13447801c16cfe7d356d1fbf4f0e5efbe8d677a35f8da5cd13795be016ff65d0 46164 autocorpus_1.0.1.orig.tar.gz
+ 80583650ea978eac5fa1e6d9695804b60386307b2338b061749647a0746e7ba3 23377 autocorpus_1.0.1-1.debian.tar.gz
+ 165066ecb2881089545c23859f5e7bf3b4b7b589b7a4eeb8ae5916ddb00e2cb8 105702 autocorpus_1.0.1-1_amd64.deb
 Files: 
- d680fb19e6adaa6ba2ffff39ab2eb174 810 text optional autocorpus_1.0.1-1.dsc
- 9961b667cfc7c73ba368ef3879793500 42663 text optional autocorpus_1.0.1.orig.tar.gz
- 4f1b0bf9a7c10140a00387a164f2bfae 23615 text optional autocorpus_1.0.1-1.debian.tar.gz
- 97a65d7585028477c9d3d9dfe048ea42 91058 text optional autocorpus_1.0.1-1_amd64.deb
+ 8c3f87c9073ac784f1079c86571e5d24 810 text optional autocorpus_1.0.1-1.dsc
+ 61d6dd53e04a574a7e6a65359aa77ae9 46164 text optional autocorpus_1.0.1.orig.tar.gz
+ d31410e455eee7f344409e1705153ad8 23377 text optional autocorpus_1.0.1-1.debian.tar.gz
+ 277b7d9b8064d216d965d2eba25dfdd6 105702 text optional autocorpus_1.0.1-1_amd64.deb

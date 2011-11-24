@@ -99,5 +99,5 @@ rm -rf "$src_name"
 
 cd "$main_dir"
 if [[ "$@" == *--upload* ]]; then
-    ./bin/upload-binaries.sh
+    ./scripts/upload-binaries.sh
 fi
