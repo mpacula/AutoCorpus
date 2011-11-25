@@ -41,3 +41,16 @@ do
         echo "License added successfully."
     fi
 done
+
+for f in $( find src/ -iname "*.hs" );
+do
+    echo -n "$f: "
+    grep_license "$f"
+    if [ "$count" != "0" ];
+    then
+        echo "Already has license. Skipping."
+    else
+        prepend "scripts/COPYING.hs.txt" "$f"
+        echo "License added successfully."
+    fi
+done

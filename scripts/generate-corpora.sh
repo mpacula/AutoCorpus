@@ -128,7 +128,7 @@ ask "Would you like to upload corpora to FTP?"
 if [ "$ans" = y ];
 then
     cd "$main_dir/data/wikipedia"
-    for f in $( find . -iname "*sample.txt" ) $( find ngrams -iname "*.txt.bz2" ); do
+    for f in $( find . -iname "*sample.txt" ) $( find ngrams -iname "*.txt.bz2" | grep -v "trigrams" ); do
         echo -e "\t$f"
         ftpup autocorpus/releases/1.0.1/wikipedia "$f"
     done
