@@ -1,0 +1,227 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+          "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<!-- XHTML template from http://snippets.dzone.com/posts/show/583. Thanks! -->
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+	<title>AutoCorpus - natural language tools & corpora</title>
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <link rel="stylesheet" href="style.css" type="text/css" />
+  </head>
+
+  <body>
+	<div id="container">
+
+	  <div id="header">
+        <div id="logo">
+          <h1>AutoCorpus</h1>
+          <p>natural language corpora from large public datasets</p>
+        </div>
+	  </div>
+
+	  <div id="container">
+		<div id="main">
+		  <h2>What is AutoCorpus?</h2>
+
+          <p>
+            AutoCorpus is a set of utilities that enable automatic
+            extraction of language corpora and language models from
+            publicly available datasets such as Wikipedia. It consists
+            of fast native binaries which can process tens of
+            gigabytes of text in little time.
+          </p>
+          
+          <p>
+          Autocorpus utilities follow the Unix design philosophy and
+          integrate easily into custom data processing pipelines. If
+          you like this project and would like to support its
+          development, please consider donating:
+          </p>
+          
+          <div id="paypal">
+            <form action="https://www.paypal.com/cgi-bin/webscr" method="post">
+              <input type="hidden" name="cmd" value="_s-xclick"/>
+              <input type="hidden" name="hosted_button_id" value="9H7WUZJCAHQNW"/>
+              <input type="image" src="https://www.paypalobjects.com/en_US/i/btn/btn_donate_SM.gif" border="0" name="submit" alt="PayPal - The safer, easier way to pay online!"/>
+              <img alt="" border="0" src="https://www.paypalobjects.com/en_US/i/scr/pixel.gif" width="1" height="1"/>
+            </form>
+          </div>
+
+          <h2>What can I do with it?</h2>  
+
+          <p>
+            AutoCorpus enables you to convert the <b>entire English
+              Wikipedia</b> from a
+              <a href="enwiki-sample.txt">30+GB XML database</a> into a clean
+              <a href="releases/1.0.1/wikipedia/clean-sample.txt">plaintext version</a>
+              and an
+              <a href="releases/1.0.1/wikipedia/bigrams-sample.txt">n-gram
+              language model</a>, in only a few hours, on a
+              laptop. You could also clean up and generate language
+              models for other text sources, like Project Gutenberg,
+              with minimal work.
+          </p>
+
+          <h2>How do I use it?</h2>  
+          
+          <p>
+            Each AutoCorpus tool has a manpage (see
+            below). Additionally, you can see how to combine the tools
+            to accomplish common tasks
+            at <a href="releases/1.0.1/man/autocorpus.7.html">autocorpus
+              (7)</a>.
+          </p>
+
+          <table>
+            <tr>
+              <td class="tool">ngrams-freq-filter</td>
+              <td><a href="releases/1.0.1/man/ngrams-freq-filter.1.html">manpage</a></td>
+            </tr>
+            <tr>
+              <td class="tool">ngrams-sort</td>
+              <td><a href="releases/1.0.1/man/ngrams-sort.1.html">manpage</a></td>
+            </tr>
+            <tr>
+              <td class="tool">ngrams</td>
+              <td><a href="releases/1.0.1/man/ngrams.1.html">manpage</a></td>
+            </tr>
+            <tr>
+              <td class="tool">sentences</td>
+              <td><a href="releases/1.0.1/man/sentences.1.html">manpage</a></td>
+            </tr>
+            <tr>
+              <td class="tool">tokenize</td>
+              <td><a href="releases/1.0.1/man/tokenize.1.html">manpage</a></td>
+            </tr>
+            <tr>
+              <td class="tool">wiki-articles</td>
+              <td><a href="releases/1.0.1/man/wiki-articles.1.html">manpage</a></td>
+            </tr>
+            <tr>
+              <td class="tool">wiki-textify</td>
+              <td><a href="releases/1.0.1/man/wiki-textify.1.html">manpage</a></td>
+            </tr>
+          </table>
+          
+
+          <h2>Is AutoCorpus free software?</h2>  
+
+          <p>
+            Yes. AutoCorpus is distributed under the terms of the 
+            <a href="http://www.gnu.org/licenses/agpl.html">Affero General Public License v3</a>.
+            The source code is available on GitHub at
+            <a href="https://github.com/mpacula/AutoCorpus">https://github.com/mpacula/AutoCorpus</a>. You
+            can also use GitHub to submit feature requests and bug
+            reports.
+          </p>
+
+          <p>
+            If you would like to use AutoCorpus in a proprietary
+            product, please
+            at <a href="mailto:maciej.pacula@gmail.com">contact the
+            author</a> and inquire about a commercial license.
+          </p>
+
+          <h2>Releases</h2>
+          
+          <p>
+          The current stable version is 1.0.1 and was released on
+          November 24, 2011.
+          <table id="releases">
+            <tr>
+              <td class="download-class">Debian/Ubuntu</td>
+              <td class="download-type">i386</td>
+              <td><a href="releases/1.0.1/debian/autocorpus_1.0.1-1_i386.deb">autocorpus_1.0.1-1_i386.deb</a></td>
+            </tr>
+
+            <tr>
+              <td class="download-class"></td>
+              <td class="download-type">amd64</td>
+              <td><a href="releases/1.0.1/debian/autocorpus_1.0.1-1_amd64.deb">autocorpus_1.0.1-1_amd64.deb</a></td>
+            </tr>
+            
+            <tr>
+              <td class="download-class">Generic Linux</td>
+              <td class="download-type">i386</td>
+              <td><a href="releases/1.0.1/autocorpus-1.0.1-i686.tar.gz">autocorpus-1.0.1-i686.tar.gz</a></td>
+            </tr>
+
+            <tr>
+              <td class="download-class"></td>
+              <td class="download-type">amd64</td>
+              <td><a href="releases/1.0.1/autocorpus-1.0.1-x86_64.tar.gz">autocorpus-1.0.1-x86_64.tar.gz</a></td>
+            </tr>
+
+            <tr>
+              <td class="download-class">Source</td>
+              <td class="download-type">all</td>
+              <td><a href="releases/1.0.1/autocorpus-1.0.1.tar.gz">autocorpus-1.0.1.tar.gz</a></td>
+            </tr>
+
+          </table>
+          </p>
+          
+          <h2>Download plaintext Wikipedia and n-grams</h2>
+          
+          <p>
+            For your convenience, language models and a cleaned-up,
+            plaintext version of Wikipedia are available for download.
+            All the datasets were generated using the latest version
+            of AutoCorpus. If a particular download is not available
+            below, it is due to file size and hosting
+            restrictions. Please
+            <a href="mailto:maciej.pacula@gmail.com">contact me</a>
+            for a download link. When viewing the files, you might
+            need to manually set your editor's encoding to UTF-8.
+          </p>
+          <p>
+            I can also ship you a USB stick with all the data (roughly
+            35GB uncompressed) for a small fee. Again, shoot the author
+            an email if interested.
+          </p>
+
+          <p>
+            All Wikipedia datasets are distributed under the 
+            <a href="http://en.wikipedia.org/wiki/Wikipedia:CC-BY-SA">Creative Commons
+              Attribution - ShareAlike 3.0 Unported License</a>.
+          </p>
+
+          <table id="datasets">
+            <tr>
+              <td class="download-class">Wikipedia</td>
+              <td class="download-type">plaintext</td>
+              <td><a href="releases/1.0.1/wikipedia/clean-sample.txt">sample</a></td>
+              <td>download</td>
+            </tr>
+            <tr>
+              <td class="download-class"></td>
+              <td class="download-type">unigrams</td>
+              <td><a href="releases/1.0.1/wikipedia/unigrams-sample.txt">sample</a></td>
+              <td><a href="releases/1.0.1/wikipedia/unigrams.txt.bz2">download</a></td>
+            </tr>
+            <tr>
+              <td class="download-class"></td>
+              <td class="download-type">bigrams</td>
+              <td><a href="releases/1.0.1/wikipedia/bigrams-sample.txt">sample</a></td>
+              <td><a href="releases/1.0.1/wikipedia/bigrams.txt.bz2">download</a></td>
+            </tr>
+            <tr>
+              <td class="download-class"></td>
+              <td class="download-type">trigrams</td>
+              <td><a href="releases/1.0.1/wikipedia/trigrams-sample.txt">sample</a></td>
+              <td>download</td>
+            </tr>
+          </table>
+
+		</div>
+	  </div>
+
+	  <div id="footer">
+        <p>© 2011  <a href="http://blog.mpacula.com">Maciej Pacula</a>. All rights reserved.</p>
+	  </div>
+	  
+	</div>
+  </body>
+
+</html>

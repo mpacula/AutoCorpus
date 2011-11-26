@@ -1,0 +1,59 @@
+/*
+Theme Name: Neutra
+Theme URI: http://www.artmov.com/blog/246/neutra-theme-for-wordpress/
+Description: Grid-based with focus on typography and simplicity - A simple and elegant theme for WordPress 2.8
+Version: 0.3.3
+Author: Artmov
+Author URI: http://www.artmov.com
+Tags: white, light, two-columns, right-sidebar, fixed-width
+.
+Released under the <a href="http://www.perlfoundation.org/artistic_license_2_0">Artistic License 2.0</a>
+.
+*/
+
+body { font-family:Arial, sans-serif; font-size:12px; }
+
+a { color:#044E80; font-weight:bold; text-decoration:none; }
+a:hover { color:#444; font-weight:bold; text-decoration:underline; }
+a:visited { color:#044E80; font-weight:bold; }
+a:active { color:#999; }
+a.target-blank, a[target="_blank"] { background:url(images/ico-icons.png) no-repeat right 5px; padding:0 25px 0 0; }
+a.happy-face { position:absolute; top:10px; right:10px; display:block; width:18px; height:18px; background:url(images/ico-icons.png) no-repeat  0px -63px; }
+p { font-size:12px; line-height:22px; }
+ul, ol { padding:0; }
+ul li, ol li { list-style-position:inside; }
+.border-gray { width:100%; height:5px; background:url(images/bg_post_border.png) repeat-x bottom left; }
+.padding { padding:0 0 0 0; margin:10px 0; }
+.alignleft { text-align:left; }
+.alignright { text-align:right; }
+.aligncenter { text-align:center; }
+
+#container { width: 600px; margin:50px auto; }
+#container h2 { margin-top: 40px }
+#container #paypal { text-align: left; }
+#container p { text-align: justify; }
+#container table { border: 0; border-spacing: 0; }
+#container #releases { margin-left: 1em }
+#container #datasets { margin-left: 1em }
+#container td { padding: 0 1em 0.5em 1em }
+#container .tool { font-weight: bold }
+#container .download-class { padding: 0.5em 1em 0.5em 1em; font-weight: bold; background-color: #AAA; }
+#container .download-type { text-align: center; font-weight: bold }
+
+/* ----- Header ----- */
+#header { width:600px; margin:-30px 20px 50px 20px; text-align: center; }
+#header #logo { text-align: center; margin:0 50px 0 0; }
+#header #logo h1 { font-size:45px; font-weight:bold; letter-spacing:-2px; }
+#header #logo p { color:#666; font-size:16px; margin:-30px 0 0 5px; text-align: center; }
+
+#page { margin:0 20px 0 20px; width:600px; }
+
+/* ----- Footer ----- */
+#footer { width:625px; margin:70px 0px 0 10px; }
+#footer p { font-size:11px; color:#444; font-weight:normal; line-height:18px; text-align: left;}
+#footer p a { color:#444; }
+
+/* ----- Safari ----- */
+@media all and (-webkit-min-device-pixel-ratio:0) {
+#left .postmetadata span.tags { background:url(images/ico-icons.png) no-repeat left -24px; }
+}
