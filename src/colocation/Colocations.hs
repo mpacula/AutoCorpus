@@ -112,76 +112,40 @@ accumulateCounts (x:y:xs) = let (w1,w2,c) = x
                                then (w1,w2,c+d):(accumulateCounts xs)
                                else x:y:(accumulateCounts xs)
 
--- Merges two count pairs, A and B, by either returning the smallest (accoring to natural ordering of words)
--- or by adding counts if the words in both input pairs are the same.
---
--- Returns its result as a 3 element pair:
---     * 1st: Nothing if A has smaller words than B, Just A otherwise
---     * 2nd: Nothing if B has smaller words than A, Just B otherwise
---     * 3rd: A if its words are smaller than B's
---            B if its words are smaller than A's
---            A + B's count if A and B's words are equal    
-mergeCountPairs :: CountPair -> CountPair -> (Maybe CountPair, Maybe CountPair, CountPair)
-mergeCountPairs l@(w1,w2,c) r@(v1,v2,d) = case compare (w1,w2) (v1,v2)
-                                          of
-                                            EQ -> (Nothing, Nothing, (w1,w2,c+d))
-                                            LT -> (Nothing, Just r, l)
-                                            GT -> (Just l, Nothing, r)
-
-
--- merges two sorted streams of count pairs (with no duplicates). The result is a sorted stream
--- of unique pairs. Counts of pairs from both streams that have identical words are added.
--- (where sorted = sorted by words).
-merge :: Maybe CountPair -> Maybe CountPair -> 
-        IO (Maybe CountPair) -> IO (Maybe CountPair) -> (CountPair -> IO ()) -> 
-        IO (Maybe CountPair)
-merge left right nextLeft nextRight write =
-  do l <- getLeft
-     r <- getRight
-     case (l,r) of
-       (Nothing, Nothing) -> return Nothing
-       (Just l,  Just r)  -> let (l',r',combined) = mergeCountPairs l r
-                             in do write combined
-                                   merge l' r' nextLeft nextRight write
-       (Just l,  Nothing) -> do write l
-                                merge Nothing Nothing nextLeft nextRight write
-       (Nothing, Just r)  -> do write r
-                                merge Nothing Nothing nextLeft nextRight write
-
+                      
+-- merges a sorted, unique list of count pairs with count pairs in a file.
+-- The results are written out to a user-specified file handle.
+mergeWithFile :: Handle -> [CountPair] -> Handle -> IO ()
+mergeWithFile inHandle [] outHandle = do str <- hGetContents inHandle
+                                         hPutStr outHandle str
+mergeWithFile inHandle pairs outHandle = helper inLine pairs
   where
-    getLeft = case left of
-                Nothing  -> nextLeft
-                l        -> return l
-                
-    getRight = case right of
-                 Nothing -> nextRight
-                 r       -> return r
-                 
+    readLine Nothing = -- todo read line only if the previous line has been consumed. Current code always reads the next one.
+    helper = do eof <- hIsEOF inHandle
+             if eof
+                       then writeCounts outHandle pairs
+                       else do line <- hGetLine inHandle
+                                       let (w1, w2, c) = deserialize line
+                                                          (v1, v2, d) = head pairs
+                                                      case compare (w1, w2) (v1, v2) of
+                                                        EQ -> do hPutStrLn outHandle $ serialize (w1, w2, c+d)
+                                                                 mergeWithFile inHandle (tail pairs) outHandle
+                                                        LT -> do hPutStrLn outHandle line
+                                                                 mergeWithFile inHandle pairs outHandle
+                                                        GT -> do hPutStrLn outHandle $ serialize (head pairs)
+                                                                 mergeWithFile inHandle (tail pairs) outHandle
+                                                        
 
+-- serializes a count pair into a string in a human-readable format
 serialize :: CountPair -> String
 serialize (w,v,c) = w ++ " " ++ v ++ "\t" ++ show c
 
+-- deserializes a count pair from a string
 deserialize :: String -> CountPair
 deserialize str = let (w, rest) = break (== ' ') str
                       (v, rest') = break (== '\t') rest
                       c = read rest'
                   in (trim w, trim v, c)
-                      
-
--- merges counts from two files and writes results to a third file, where
--- files can be any valid handles.
-mergeFiles :: Handle -> Handle -> Handle -> IO ()
-mergeFiles inFile1 inFile2 outFile = do merge Nothing Nothing (readLine inFile1) (readLine inFile2) write
-                                        return ()
-  where
-    readLine handle = do eof <- hIsEOF handle
-                         if eof
-                           then return Nothing
-                           else do line <- hGetLine handle
-                                   return $ Just (deserialize line)
-                                   
-    write = (hPutStrLn outFile) . serialize
-    
 
 
 -- reads full paragraphs from a file so that the total number of lines
