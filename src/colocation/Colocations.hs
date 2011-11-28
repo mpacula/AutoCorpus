@@ -29,6 +29,9 @@ import qualified Data.Map as M
 import System.Directory
 import System.IO
 import Test.QuickCheck
+import Control.Exception
+import Debug.Trace
+import Control.Parallel
 
 type CountPair = (String, String, Integer)
 
@@ -41,6 +44,9 @@ instance Arbitrary CountPair where
                  v <- elements words
                  c <- choose (1, 10)
                  return (w, v, c)
+                 
+comparePair :: CountPair -> CountPair -> Ordering
+(w1,w2,d) `comparePair` (v1,v2,c) = (w1,w2) `compare` (v1,v2)
                   
                    
 prop_trim_indempotent str = trim str == (trim . trim) str
@@ -63,6 +69,16 @@ test = mapM_ (\(name, props) -> putStrLn name >> mapM_ quickCheck props)
 
 {-- IMPLEMENTATION --}
 
+
+serialize :: CountPair -> String
+serialize (w,v,c) = show c ++ "\t" ++ w ++ " " ++ v
+
+deserialize :: String -> CountPair
+deserialize str = let (cstr, rest) = break (== '\t') str
+                      (w, v) = break (== ' ') rest
+                  in (trim w, trim v, read cstr)
+                     
+
 -- removes space characters from both sides of a string
 trim :: String -> String
 trim = trimLeft . trimLeft
@@ -82,7 +98,7 @@ sentenceCounts sentence context =
     
 -- counts colocations for words in a paragraph
 paragraphCounts :: [String] -> [CountPair]
-paragraphCounts sentences = accumulateCounts $ sort $ helper ("":sentences)
+paragraphCounts sentences = accumulateCounts $ sortBy comparePair $ helper ("":sentences)
   where
     helper [] = []
     helper [x] = []
@@ -98,79 +114,125 @@ documentCounts sentences = let sentences' = dropWhile ((== "") . trim) sentences
                                paragraph  = takeWhile ((/= "") . trim) sentences'
                                counts = paragraphCounts paragraph ++ documentCounts (drop (length paragraph) sentences')
                            in
-                            accumulateCounts $ sort counts
+                            accumulateCounts $ sortBy comparePair counts
                                   
 
 -- given a sorted list of pairs, adds up the counts for pairs
 -- with the same words
 accumulateCounts :: [CountPair] -> [CountPair]
 accumulateCounts [] = []
-accumulateCounts [x] = [x]
-accumulateCounts (x:y:xs) = let (w1,w2,c) = x
-                                (v1,v2,d) = y
-                            in if (w1,w2) == (v1,v2)
-                               then (w1,w2,c+d):(accumulateCounts xs)
-                               else x:y:(accumulateCounts xs)
+accumulateCounts lst@((w,v,c):rest) = let same = takeWhile (\(w2,v2,_) -> (w2,v2) == (w,v)) lst
+                                          sumCounts = sum $ map (\(_,_,c) -> c) same
+                                      in (w,v,sumCounts):(accumulateCounts $ drop (length same) lst)
+                                       
 
-                      
--- merges a sorted, unique list of count pairs with count pairs in a file.
--- The results are written out to a user-specified file handle.
-mergeWithFile :: Handle -> [CountPair] -> Handle -> IO ()
-mergeWithFile inHandle [] outHandle = do str <- hGetContents inHandle
-                                         hPutStr outHandle str
-mergeWithFile inHandle pairs outHandle = helper inLine pairs
+-- Merges two count pairs, A and B, by either returning the smallest (accoring to natural ordering of words)
+-- or by adding counts if the words in both input pairs are the same.
+--
+-- Returns its result as a 3 element pair:
+--     * 1st: Nothing if A has smaller words than B, Just A otherwise
+--     * 2nd: Nothing if B has smaller words than A, Just B otherwise
+--     * 3rd: A if its words are smaller than B's
+--            B if its words are smaller than A's
+--            A + B's count if A and B's words are equal    
+mergeCountPairs :: CountPair -> CountPair -> (Maybe CountPair, Maybe CountPair, CountPair)
+mergeCountPairs l@(w1,w2,c) r@(v1,v2,d) = case compare (w1,w2) (v1,v2)
+                                          of
+                                            EQ -> (Nothing, Nothing, (w1,w2,c+d))
+                                            LT -> (Nothing, Just r, l)
+                                            GT -> (Just l, Nothing, r)
+
+
+-- merges two sorted streams of count pairs (with no duplicates). The result is a sorted stream
+-- of unique pairs. Counts of pairs from both streams that have identical words are added.
+-- (where sorted = sorted by words).
+merge :: Maybe CountPair -> Maybe CountPair -> 
+        IO (Maybe CountPair) -> IO (Maybe CountPair) -> (CountPair -> IO ()) -> 
+        IO (Maybe CountPair)
+merge left right nextLeft nextRight write =
+  do l <- getLeft
+     r <- getRight
+     case (l,r) of
+       (Nothing, Nothing) -> return Nothing
+       (Just l,  Just r)  -> let (l',r',combined) = mergeCountPairs l r
+                             in do write combined
+                                   merge l' r' nextLeft nextRight write
+       (Just l,  Nothing) -> do write l
+                                merge Nothing Nothing nextLeft nextRight write
+       (Nothing, Just r)  -> do write r
+                                merge Nothing Nothing nextLeft nextRight write
+
   where
-    readLine Nothing = -- todo read line only if the previous line has been consumed. Current code always reads the next one.
-    helper = do eof <- hIsEOF inHandle
-             if eof
-                       then writeCounts outHandle pairs
-                       else do line <- hGetLine inHandle
-                                       let (w1, w2, c) = deserialize line
-                                                          (v1, v2, d) = head pairs
-                                                      case compare (w1, w2) (v1, v2) of
-                                                        EQ -> do hPutStrLn outHandle $ serialize (w1, w2, c+d)
-                                                                 mergeWithFile inHandle (tail pairs) outHandle
-                                                        LT -> do hPutStrLn outHandle line
-                                                                 mergeWithFile inHandle pairs outHandle
-                                                        GT -> do hPutStrLn outHandle $ serialize (head pairs)
-                                                                 mergeWithFile inHandle (tail pairs) outHandle
-                                                        
+    getLeft = case left of
+                Nothing  -> nextLeft
+                l        -> return l
+                
+    getRight = case right of
+                 Nothing -> nextRight
+                 r       -> return r
+                                     
 
--- serializes a count pair into a string in a human-readable format
-serialize :: CountPair -> String
-serialize (w,v,c) = w ++ " " ++ v ++ "\t" ++ show c
-
--- deserializes a count pair from a string
-deserialize :: String -> CountPair
-deserialize str = let (w, rest) = break (== ' ') str
-                      (v, rest') = break (== '\t') rest
-                      c = read rest'
-                  in (trim w, trim v, c)
-
-
--- reads full paragraphs from a file so that the total number of lines
--- read is approximately N. In practice the exact number will be N +
--- m, where m is the number of lines remaining to complete paragraph
--- at line N, or <= N if EOF is reached. An empty returned list can be
--- used to check for EOF.
-hGetNLineParagraphs :: Integer -> Handle -> IO [String]
-hGetNLineParagraphs n handle = do lines <- helper 0 handle []
-                                  return $ reverse lines
+-- merges counts from two files and writes results to a third file, where
+-- files can be any valid handles.
+mergeFiles :: Handle -> Handle -> Handle -> IO ()
+mergeFiles inFile1 inFile2 outFile = do merge Nothing Nothing (readLine inFile1) (readLine inFile2) write
+                                        return ()
   where
-    helper c handle sofar = do eof <- hIsEOF handle
-                               if eof
-                                 then return sofar
-                                 else do line <- hGetLine handle
-                                         if trim line == "" && c >= n
-                                           then return $ line:sofar
-                                           else helper (c+1) handle (line:sofar)
-                                         
-                                         
--- options that drive our counting process
-data Options = Options {
-  maxMemoryLines :: Integer -- maximum number of lines we will hold in memory
-}
+    readLine handle = do eof <- hIsEOF handle
+                         if eof
+                           then return Nothing
+                           else do line <- hGetLine handle
+                                   return $ Just (deserialize line)
+                                   
+    write = (hPutStrLn outFile) . serialize
+    
+    
+-- seeks forward to the closest paragraph boundary, or EOF, whichever comes first
+hSeekToParagraph :: Handle -> IO ()
+hSeekToParagraph h = do hReadOne -- we might by chance be positioned
+                                   -- at the end of a non-empty line,
+                                   -- right before the newline. This
+                                   -- situation is indistinguishable
+                                   -- from being on an empty line, so
+                                   -- we seek forward one line and
+                                   -- then check.
+                        helper h
+  where
+    hReadOne = do eof <- hIsEOF h
+                  if eof then return () else hGetLine h >> return ()
+                  
+    helper h = do eof <- hIsEOF h
+                  if eof
+                    then return ()
+                    else do line <- handle (\e -> do hPutStrLn stderr $ "Warning: " ++ show (e :: SomeException)
+                                                     hSeek h RelativeSeek 1
+                                                     return "ignore me")
+                                    (hGetLine h)
+                            if null $ trim line
+                              then return ()
+                              else hSeekToParagraph h
+    
 
+-- splits the file into N chunks at paragraph boundaries, and returns
+-- pairs: (start, end) of the chunks. The number of the chunks might
+-- be less than N if there are not enough paragraphs in the file.
+hSplit :: Handle -> Integer -> IO [(Integer,Integer)]
+hSplit handle n = do size <- hFileSize handle
+                     let chunkSize = (fromInteger size) / (fromInteger n) :: Double
+                         -- boundaries without regard for
+                         -- paragraphs. We'll move these to paragraph
+                         -- boundaries.
+                         byteBoundaries = nub $ map (round . (*chunkSize)) [1..fromInteger (n-1)]
+                     paragraphBoundaries <- mapM (\start -> do hSeek handle AbsoluteSeek start
+                                                               hSeekToParagraph handle
+                                                               hTell handle)
+                                            byteBoundaries
+                     let boundaries = nub $ sort paragraphBoundaries
+                         starts = nub $ 0:boundaries
+                         ends = nub $ boundaries++[size]
+                     return $ zip starts ends
+
+-- Creates a new temporary file. The created file has to be manually deleted.
 newTmpFile :: IO (FilePath, Handle)
 newTmpFile = do tmpDir <- getTemporaryDirectory
                 openTempFile tmpDir "colocations.txt"
@@ -191,15 +253,53 @@ hCopyAndDelete (Just (path, inHandle)) outHandle = do str <- hGetContents inHand
                                                       removeFile path
                                                       
 
--- -- counts all colocations in the given file and writes them out to another file
--- countColocations :: Options -> Handle -> Handle -> IO ()
--- countColocations opts inFile outFile = helper Nothing
---   where
---     helper tmpFile = do lines <- hGetNLineParagraphs (maxMemoryLines opts) inFile
---                         if null lines 
---                           then do 
---                                   return ()
-                               
---                          else do let counts = documentCounts lines
---                                  case chunks of
---                                    [] -> return ()
+countColocations :: FilePath -> [(Integer, Integer)] -> IO (FilePath, Handle)
+countColocations inFilePath [(start, end)] = do inFile <- openFile inFilePath ReadMode
+                                                hSeek inFile AbsoluteSeek start
+                                                lines <- hReadLines inFile end []
+                                                let counts = documentCounts lines
+                                                (outPath, outHandle) <- newTmpFile
+                                                writeCounts outHandle counts
+                                                hSeek outHandle AbsoluteSeek 0
+                                                return (outPath, outHandle)
+  where
+    hReadLines handle end sofar = do pos <- hTell handle
+                                     case compare pos end of
+                                       EQ -> return $ reverse sofar
+                                       GT -> return $ reverse (tail sofar) -- we've read too far
+                                       LT -> do line <- hGetLine handle
+                                                hReadLines handle end $ line:sofar
+                                               
+                                               
+countColocations inFile [] = error "Cannot count colocations with no chunks."
+countColocations inFile chunks = do let (chunksLeft, chunksRight) = halve chunks
+                                    (fileLeft, handleLeft) <- countColocations inFile chunksLeft
+                                    (fileRight, handleRight) <- countColocations inFile chunksRight
+                                    (outFile, outHandle) <- newTmpFile
+                                    fileLeft `par` fileRight `par` (mergeFiles handleLeft handleRight outHandle)
+                                    hClose handleLeft
+                                    hClose handleRight
+                                    removeFile fileLeft
+                                    removeFile fileRight
+                                    hSeek outHandle AbsoluteSeek 0
+                                    return (outFile, outHandle)
+  where
+    halve lst = let k = (length lst) `div` 2
+                in (take k lst, drop k lst)
+                                    
+                                    
+                   
+data Options = Options { chunkSize :: Integer
+                       }
+
+countInFile :: Options -> FilePath -> FilePath -> IO ()
+countInFile opts inPath outPath = do inHandle <- openFile inPath ReadMode
+                                     inSize <- hFileSize inHandle
+                                     let numChunks = inSize `div` (chunkSize opts)
+                                     chunks <- hSplit inHandle numChunks
+                                     hPutStrLn stderr $ "Number of chunks: " ++ show (length chunks)                                     
+                                     hPutStrLn stderr $ "Chunks: " ++ show chunks
+                                     (tempOutPath, tempOutHandle) <- countColocations inPath chunks
+                                     hClose tempOutHandle
+                                     renameFile tempOutPath outPath
+                                     hClose inHandle
