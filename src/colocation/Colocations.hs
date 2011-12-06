@@ -21,62 +21,67 @@
 
 {-# LANGUAGE TypeSynonymInstances #-}
 
-module Colocations where
+module Main where
 
+import Control.Monad
 import Data.List
 import Data.Char
+import Data.Int
 import qualified Data.Map as M
+import qualified Data.HashTable as H
 import System.Directory
 import System.IO
 import Test.QuickCheck
 import Control.Exception
 import Debug.Trace
 import Control.Parallel
+import System (getArgs)
+import System.Console.GetOpt
+
 
 type CountPair = (String, String, Integer)
+type CountTable = H.HashTable (String, String) Integer
 
 
 {-- TESTS --}
 
-instance Arbitrary CountPair where
-  arbitrary = do let words =  ["a", "b", "c", "d", "foo", "bar"]
-                 w <- elements words
-                 v <- elements words
-                 c <- choose (1, 10)
-                 return (w, v, c)
+-- instance Arbitrary CountPair where
+--   arbitrary = do let words =  ["a", "b", "c", "d", "foo", "bar"]
+--                  w <- elements words
+--                  v <- elements words
+--                  c <- choose (1, 10)
+--                  return (w, v, c)
                  
 comparePair :: CountPair -> CountPair -> Ordering
 (w1,w2,d) `comparePair` (v1,v2,c) = (w1,w2) `compare` (v1,v2)
                   
                    
-prop_trim_indempotent str = trim str == (trim . trim) str
-prop_trim_nongrow str = length str >= (length . trim) str
+-- prop_trim_indempotent str = trim str == (trim . trim) str
+-- prop_trim_nongrow str = length str >= (length . trim) str
 
 
-prop_sentence_to_set_uniq sentence = (nub (sentenceToSet sentence)) == (sentenceToSet sentence)
-prop_sentence_to_set_words sentence = sort (nub (words sentence)) == sort (sentenceToSet sentence)
+-- prop_sentence_to_set_uniq sentence = (nub (sentenceToSet sentence)) == (sentenceToSet sentence)
+-- prop_sentence_to_set_words sentence = sort (nub (words sentence)) == sort (sentenceToSet sentence)
 
 
-prop_counts_sentence sentence context = undefined
+-- prop_counts_sentence sentence context = undefined
 
--- runs all tests
-test :: IO ()
-test = mapM_ (\(name, props) -> putStrLn name >> mapM_ quickCheck props)
-           [ ("trim",          [prop_trim_indempotent, prop_trim_nongrow])
-           , ("sentenceToSet", [prop_sentence_to_set_uniq])
-           ]
+-- -- runs all tests
+-- test :: IO ()
+-- test = mapM_ (\(name, props) -> putStrLn name >> mapM_ quickCheck props)
+--            [ ("trim",          [prop_trim_indempotent, prop_trim_nongrow])
+--            , ("sentenceToSet", [prop_sentence_to_set_uniq])
+--            ]
 
 
 {-- IMPLEMENTATION --}
 
 
 serialize :: CountPair -> String
-serialize (w,v,c) = show c ++ "\t" ++ w ++ " " ++ v
+serialize cp@(w,v,c) = show cp
 
 deserialize :: String -> CountPair
-deserialize str = let (cstr, rest) = break (== '\t') str
-                      (w, v) = break (== ' ') rest
-                  in (trim w, trim v, read cstr)
+deserialize str = read str
                      
 
 -- removes space characters from both sides of a string
@@ -91,39 +96,48 @@ sentenceToSet = nub . words
 -- counts colocations for words in a sentence given its context (surrounding sentences)
 sentenceCounts :: String -> [String] -> [CountPair]
 sentenceCounts sentence context =
-  accumulateCounts $ sort [(a,b,1) | a <- (words sentence), b <- (sentenceToSet ctx)]
+  [(a,b,1) | a <- (words sentence), b <- (sentenceToSet ctx)]
   where
     ctx = foldl (++) [] $ intersperse " " context
     
     
 -- counts colocations for words in a paragraph
 paragraphCounts :: [String] -> [CountPair]
-paragraphCounts sentences = accumulateCounts $ sortBy comparePair $ helper ("":sentences)
+paragraphCounts [x] = []
+paragraphCounts sentences = helper ("":sentences)
   where
     helper [] = []
     helper [x] = []
     helper (x:y:[]) = sentenceCounts y [x]
     helper (x:y:z:rest) = sentenceCounts y [x,z] ++ helper (y:z:rest)
     
-    
--- counts colocations for a document. Paragraphs are assumed to be separated
--- by one or more blank lines
-documentCounts :: [String] -> [CountPair]
-documentCounts [] = []
-documentCounts sentences = let sentences' = dropWhile ((== "") . trim) sentences
-                               paragraph  = takeWhile ((/= "") . trim) sentences'
-                               counts = paragraphCounts paragraph ++ documentCounts (drop (length paragraph) sentences')
-                           in
-                            accumulateCounts $ sortBy comparePair counts
+-- like documentCounts, but uses a HashTable in the IO monad
+documentCountsHT :: CountTable -> [String] -> IO (CountTable)
+documentCountsHT ht [] = return ht
+documentCountsHT ht sentences = let sentences' = dropWhile ((== "") . trim) sentences
+                                    paragraph  = takeWhile ((/= "") . trim) sentences'
+                                in
+                                 do ht <- (accumulateCountsHT ht $ paragraphCounts paragraph)
+                                    ht `seq` documentCountsHT ht $ drop (length paragraph) sentences'
                                   
+hashStringPair :: (String, String) -> Int32
+hashStringPair (w,v) = H.hashString $ w ++ v
 
--- given a sorted list of pairs, adds up the counts for pairs
--- with the same words
-accumulateCounts :: [CountPair] -> [CountPair]
-accumulateCounts [] = []
-accumulateCounts lst@((w,v,c):rest) = let same = takeWhile (\(w2,v2,_) -> (w2,v2) == (w,v)) lst
-                                          sumCounts = sum $ map (\(_,_,c) -> c) same
-                                      in (w,v,sumCounts):(accumulateCounts $ drop (length same) lst)
+emptyCountTable :: IO CountTable
+emptyCountTable = H.new (==) hashStringPair
+
+-- like accumulateCounts, but uses a HashTable in the IO monad
+accumulateCountsHT :: CountTable -> [CountPair] -> IO (CountTable)
+accumulateCountsHT ht counts = do ht <- foldM (\ht (w,v,c) ->
+                                                do current <- H.lookup ht (w,v)
+                                                   case current of
+                                                     Nothing -> H.insert ht (w,v) c
+                                                     Just d -> H.update ht (w,v) (c+d) >> return ()
+                                                   return ht)
+                                       ht
+                                       counts
+                                  return ht
+
                                        
 
 -- Merges two count pairs, A and B, by either returning the smallest (accoring to natural ordering of words)
@@ -199,7 +213,7 @@ hSeekToParagraph h = do hReadOne -- we might by chance be positioned
                         helper h
   where
     hReadOne = do eof <- hIsEOF h
-                  if eof then return () else hGetLine h >> return ()
+                  if eof then return () else hSafeGetLine h >> return ()
                   
     helper h = do eof <- hIsEOF h
                   if eof
@@ -231,6 +245,12 @@ hSplit handle n = do size <- hFileSize handle
                          starts = nub $ 0:boundaries
                          ends = nub $ boundaries++[size]
                      return $ zip starts ends
+                     
+hSafeGetLine :: Handle -> IO (String)
+hSafeGetLine h =  handle (\e -> do hPutStrLn stderr $ "Warning: " ++ show (e :: SomeException)
+                                   hSeek h RelativeSeek 1
+                                   return "")
+                  (hGetLine h)
 
 -- Creates a new temporary file. The created file has to be manually deleted.
 newTmpFile :: IO (FilePath, Handle)
@@ -255,9 +275,13 @@ hCopyAndDelete (Just (path, inHandle)) outHandle = do str <- hGetContents inHand
 
 countColocations :: FilePath -> [(Integer, Integer)] -> IO (FilePath, Handle)
 countColocations inFilePath [(start, end)] = do inFile <- openFile inFilePath ReadMode
+                                                hPutStrLn stderr $ show (start, end)
                                                 hSeek inFile AbsoluteSeek start
                                                 lines <- hReadLines inFile end []
-                                                let counts = documentCounts lines
+                                                ht <- emptyCountTable
+                                                documentCountsHT ht lines
+                                                lst <- H.toList ht
+                                                let counts = sort $ map (\((w,v), c) -> (w,v,c)) lst
                                                 (outPath, outHandle) <- newTmpFile
                                                 writeCounts outHandle counts
                                                 hSeek outHandle AbsoluteSeek 0
@@ -267,7 +291,7 @@ countColocations inFilePath [(start, end)] = do inFile <- openFile inFilePath Re
                                      case compare pos end of
                                        EQ -> return $ reverse sofar
                                        GT -> return $ reverse (tail sofar) -- we've read too far
-                                       LT -> do line <- hGetLine handle
+                                       LT -> do line <- hSafeGetLine handle
                                                 hReadLines handle end $ line:sofar
                                                
                                                
@@ -289,17 +313,26 @@ countColocations inFile chunks = do let (chunksLeft, chunksRight) = halve chunks
                                     
                                     
                    
-data Options = Options { chunkSize :: Integer
-                       }
+countInFile :: Integer -> FilePath -> FilePath -> IO ()
+countInFile chunkSize inPath outPath =
+  do inHandle <- openFile inPath ReadMode
+     inSize <- hFileSize inHandle
+     let numChunks = inSize `div` chunkSize
+     chunks <- hSplit inHandle numChunks
+     hPutStrLn stderr $ "Number of chunks: " ++ show (length chunks)                                     
+     hPutStrLn stderr $ "Chunks: " ++ show chunks
+     (tempOutPath, tempOutHandle) <- countColocations inPath chunks
+     hClose tempOutHandle
+     renameFile tempOutPath outPath
+     hClose inHandle
+                                     
 
-countInFile :: Options -> FilePath -> FilePath -> IO ()
-countInFile opts inPath outPath = do inHandle <- openFile inPath ReadMode
-                                     inSize <- hFileSize inHandle
-                                     let numChunks = inSize `div` (chunkSize opts)
-                                     chunks <- hSplit inHandle numChunks
-                                     hPutStrLn stderr $ "Number of chunks: " ++ show (length chunks)                                     
-                                     hPutStrLn stderr $ "Chunks: " ++ show chunks
-                                     (tempOutPath, tempOutHandle) <- countColocations inPath chunks
-                                     hClose tempOutHandle
-                                     renameFile tempOutPath outPath
-                                     hClose inHandle
+data Options = Options { chunkSize :: String
+                       , inputPath :: FilePath
+                       } deriving Show
+
+main :: IO ()
+main = do args <- getArgs
+          countInFile (1024*1024) (args !! 0) (args !! 1)
+           
+          
