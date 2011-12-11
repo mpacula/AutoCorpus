@@ -39,8 +39,8 @@ import System (getArgs)
 import System.Console.GetOpt
 
 
-type CountPair = (String, String, Integer)
-type CountTable = H.HashTable (String, String) Integer
+type CountPair = (String, Integer)
+type CountTable = H.HashTable String Integer
 
 
 {-- TESTS --}
@@ -51,10 +51,6 @@ type CountTable = H.HashTable (String, String) Integer
 --                  v <- elements words
 --                  c <- choose (1, 10)
 --                  return (w, v, c)
-                 
-comparePair :: CountPair -> CountPair -> Ordering
-(w1,w2,d) `comparePair` (v1,v2,c) = (w1,w2) `compare` (v1,v2)
-                  
                    
 -- prop_trim_indempotent str = trim str == (trim . trim) str
 -- prop_trim_nongrow str = length str >= (length . trim) str
@@ -78,7 +74,7 @@ comparePair :: CountPair -> CountPair -> Ordering
 
 
 serialize :: CountPair -> String
-serialize cp@(w,v,c) = show cp
+serialize cp@(wv,c) = wv ++ "\t" ++ show c
 
 deserialize :: String -> CountPair
 deserialize str = read str
@@ -96,7 +92,7 @@ sentenceToSet = nub . words
 -- counts colocations for words in a sentence given its context (surrounding sentences)
 sentenceCounts :: String -> [String] -> [CountPair]
 sentenceCounts sentence context =
-  [(a,b,1) | a <- (words sentence), b <- (sentenceToSet ctx)]
+  [(a ++ " " ++ b,1) | a <- (words sentence), b <- (sentenceToSet ctx)]
   where
     ctx = foldl (++) [] $ intersperse " " context
     
@@ -120,22 +116,25 @@ documentCountsHT ht sentences = let sentences' = dropWhile ((== "") . trim) sent
                                  do ht <- (accumulateCountsHT ht $ paragraphCounts paragraph)
                                     ht `seq` documentCountsHT ht $ drop (length paragraph) sentences'
                                   
-hashStringPair :: (String, String) -> Int32
-hashStringPair (w,v) = H.hashString $ w ++ v
-
 emptyCountTable :: IO CountTable
-emptyCountTable = H.new (==) hashStringPair
+emptyCountTable = H.new (==) H.hashString
+
+foreachM :: Monad m => (a -> m b) -> b -> [a] -> m b
+foreachM f def [] = return def
+foreachM f def (x:xs) = do f x
+                           foreachM f def xs
+
 
 -- like accumulateCounts, but uses a HashTable in the IO monad
 accumulateCountsHT :: CountTable -> [CountPair] -> IO (CountTable)
-accumulateCountsHT ht counts = do ht <- foldM (\ht (w,v,c) ->
-                                                do current <- H.lookup ht (w,v)
-                                                   case current of
-                                                     Nothing -> H.insert ht (w,v) c
-                                                     Just d -> H.update ht (w,v) (c+d) >> return ()
-                                                   return ht)
-                                       ht
-                                       counts
+accumulateCountsHT ht counts = do trace (show $ length counts) return ()
+                                  forM_
+                                    counts
+                                    (\(wv,c) ->
+                                      do current <- H.lookup ht wv
+                                         case current of
+                                           Nothing -> H.insert ht wv c
+                                           Just d -> H.update ht wv (c+d) >> return ())
                                   return ht
 
                                        
@@ -150,9 +149,9 @@ accumulateCountsHT ht counts = do ht <- foldM (\ht (w,v,c) ->
 --            B if its words are smaller than A's
 --            A + B's count if A and B's words are equal    
 mergeCountPairs :: CountPair -> CountPair -> (Maybe CountPair, Maybe CountPair, CountPair)
-mergeCountPairs l@(w1,w2,c) r@(v1,v2,d) = case compare (w1,w2) (v1,v2)
+mergeCountPairs l@(wv1,c) r@(wv2,d) = case compare wv1 wv2
                                           of
-                                            EQ -> (Nothing, Nothing, (w1,w2,c+d))
+                                            EQ -> (Nothing, Nothing, (wv1,c+d))
                                             LT -> (Nothing, Just r, l)
                                             GT -> (Just l, Nothing, r)
 
@@ -281,7 +280,7 @@ countColocations inFilePath [(start, end)] = do inFile <- openFile inFilePath Re
                                                 ht <- emptyCountTable
                                                 documentCountsHT ht lines
                                                 lst <- H.toList ht
-                                                let counts = sort $ map (\((w,v), c) -> (w,v,c)) lst
+                                                let counts = sort lst
                                                 (outPath, outHandle) <- newTmpFile
                                                 writeCounts outHandle counts
                                                 hSeek outHandle AbsoluteSeek 0
