@@ -40,8 +40,8 @@
 #include "string.h"
 #include "NGramCounter.h"
 #include "utilities.h"
+#include "merge.h"
 
-#define SEPARATOR '\t'
 
 using namespace std;
 
@@ -86,7 +86,7 @@ void NGramCounter::endChunk()
   for(set<string>::iterator it = sortedNGrams.begin(); it != sortedNGrams.end(); it++) {
     string ngram = *it;
     long count = currentCounts[ngram];
-    fprintf(chunkFile, "%ld%c%s\n", count, SEPARATOR, ngram.c_str());
+    fprintf(chunkFile, "%ld%c%s\n", count, NGRAM_SEPARATOR, ngram.c_str());
   }  
   fflush(chunkFile);
   rewind(chunkFile);
@@ -143,7 +143,7 @@ void NGramCounter::printOnlyChunk()
   long c_total = 0;
   while(fgets(buf, buf_size, chunkFiles[0])) {
     cout << buf;
-    deconstructNGram(buf, ngram, &c);
+    deconstructCount(buf, ngram, &c);
     c_total += c;
   }
 
@@ -174,104 +174,13 @@ FILE* NGramCounter::mergeChunks(FILE* chunk1, FILE* chunk2, bool last)
   if(mergedFile == NULL)
     throw string("Could not create output file to store merged chunks.");
 
-  const size_t buf_size = 1024*1024;
-  char* line1 = new char[buf_size];
-  char* line2 = new char[buf_size];
-  char* ngram1 = new char[buf_size];
-  char* ngram2 = new char[buf_size];
-  long c1=0, c2=0, c_total=0;
+  mergeCounts(chunk1, chunk2, mergedFile);
 
-  line1 = fgets(line1, buf_size, chunk1);
-  line2 = fgets(line2, buf_size, chunk2);
-  while(true) {
-
-    /* Both lines nonempty */
-    if(line1 != NULL && line2 != NULL) {
-      if(!deconstructNGram(line1, ngram1, &c1)) {
-        cerr << "WARNING: Could not deconstruct ngram when merging chunks. Line (chunk 1): " << endl;
-        cerr << line1;
-        cerr << "END OF LINE" << endl;
-
-        line1 = fgets(line1, buf_size, chunk1);
-        continue;
-      }
-      else if(!deconstructNGram(line2, ngram2, &c2)) {
-        cerr << "WARNING: Could not deconstruct ngram when merging chunks. Line (chunk 2): " << endl;
-        cerr << line2;
-        cerr << "END OF LINE" << endl;
-
-        line2 = fgets(line2, buf_size, chunk2);
-        continue;
-      }
-
-      int cmp = strcmp(ngram1, ngram2);
-      /* ngrams from both chunks equal: add counts */
-      if(cmp == 0) {
-        fprintf(mergedFile, "%ld%c%s\n", c1+c2, SEPARATOR, ngram1);
-        line1 = fgets(line1, buf_size, chunk1);
-        line2 = fgets(line2, buf_size, chunk2);
-        c_total+=(c1+c2);
-        continue;
-      }
-      /* ngram from first chunk is smaller */
-      else if(cmp < 0) {
-        fputs(line1, mergedFile);
-        line1 = fgets(line1, buf_size, chunk1);
-        c_total += c1;
-        continue;
-      }
-      /* ngram from second chunk is smaller */
-      else {
-        fputs(line2, mergedFile);
-        line2 = fgets(line2, buf_size, chunk2);
-        c_total += c2;
-        continue;
-      }
-    }
-    /* Only first line nonempty */
-    else if(line1 != NULL) {
-      if(!deconstructNGram(line1, ngram1, &c1)) {
-        cerr << "WARNING: Could not deconstruct ngram when merging chunks. Line (chunk 1): " << endl;
-        cerr << line1;
-	cerr << "END OF LINE" << endl;
-      } else {
-        c_total += c1;
-        fputs(line1, mergedFile);
-      }
-      line1 = fgets(line1, buf_size, chunk1);
-    }
-    /* Only second line nonempty */
-    else if(line2 != NULL) {
-      if(!deconstructNGram(line2, ngram2, &c2)) {
-        cerr << "WARNING: Could not deconstruct ngram when merging chunks. Line (chunk 2): " << endl;
-        cerr << line2;
-	cerr << "END OF LINE" << endl;
-      } else {
-        c_total += c2;
-        fputs(line2, mergedFile);
-      }
-      line2 = fgets(line2, buf_size, chunk2);
-    }
-    else
-      break;
-  }
-
-  if(!feof(chunk1) || !feof(chunk2))
-    throw string("Read error on at least one chunk: read failed before end of file");
-  
-  if(last && c_total != totalCount) {
-    cerr << "WARNING: input and output ngram counts mismatch: " << totalCount << " vs. " << c_total << endl;
-  }
-  else if(!last)
+  // mergedFile is yet another chunk that we'll have to merge. Hence we'll rewind it
+  // so that future reads start from the beginning.
+  if(!last) 
     rewind(mergedFile);
-
-  if(verbose)
-    cerr << "Merge complete. ngrams: " << c_total << endl;
-
-  delete[] line1;
-  delete[] line2;
-  delete[] ngram1;
-  delete[] ngram2;
+  
   fclose(chunk1);
   fclose(chunk2);
   return last ? NULL : mergedFile;

@@ -1,7 +1,7 @@
 CC = g++
 LIBS = -lpcre
 CFLAGS = -Wall -O3 -I "../common"
-COMMON_OBJ = $(wildcard ../common/*.o)
+COMMON_OBJ = ../common/utilities.o ../common/PCREMatcher.o
 COMPILE = $(CC) $(CFLAGS) -c 
 ALL_OBJFILES = $(patsubst %.cpp,%.o,$(wildcard *.cpp))
 OBJFILES = $(filter-out Sentences.o Textify.o, $(ALL_OBJFILES)) $(COMMON_OBJ)

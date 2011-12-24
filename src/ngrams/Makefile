@@ -1,6 +1,6 @@
 CC = g++
 LIBS = 
-COMMON_OBJ = $(wildcard ../common/*.o)
+COMMON_OBJ = ../common/merge.o ../common/PCREMatcher.o ../common/utilities.o
 CFLAGS = -Wall -std=c++0x -O3 -I "../common"
 COMPILE = $(CC) $(CFLAGS) -c
 ALL_OBJFILES = $(patsubst %.cpp,%.o,$(wildcard *.cpp))

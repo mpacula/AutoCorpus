@@ -70,7 +70,7 @@ public:
     }
     
     long c = 0;
-    if(!deconstructNGram(line.c_str(), ngram, &c)) {
+    if(!deconstructCount(line.c_str(), ngram, &c)) {
       cerr << "WARNING: could not read ngram from input line:\n" << line << endl;
       return;
     }

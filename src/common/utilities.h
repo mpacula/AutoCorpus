@@ -31,6 +31,7 @@
 #include <string.h>
 
 #define NGRAM_SEPARATOR '\t'
+#define COUNT_SEPARATOR NGRAM_SEPARATOR
 #define ABBREVIATION_REGEX "^((\\w\\.)|([A-Z][a-z]\\.))+(\\s*\\w\\.?)?(\\s|$)+"
 
 struct Error
@@ -52,6 +53,6 @@ struct Error
 
 pcre* makePCRE(const char* expr, int options);
 long findchr(const char* str, char ch);
-char* deconstructNGram(const char* str, char* ngram, long* count);
+char* deconstructCount(const char* str, char* ngram, long* count);
 
 #endif // utilities_h

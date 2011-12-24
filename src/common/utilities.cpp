@@ -54,7 +54,7 @@ long findchr(const char* str, char ch)
   return (long)(offset - str);
 }
 
-char* deconstructNGram(const char* str, char* ngram, long* count) 
+char* deconstructCount(const char* str, char* ngram, long* count) 
 {
   const long delimIndex = findchr(str, NGRAM_SEPARATOR);
   if(delimIndex < 0)

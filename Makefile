@@ -1,7 +1,7 @@
-DIRS = src/wikipedia src/ngrams src/common
+DIRS = src/wikipedia src/ngrams src/common src/collocations
 BIN = bin
 
-all: wikipedia ngrams
+all: wikipedia ngrams collocations
 
 common:
 	cd src/common; $(MAKE) $(MFLAGS)
@@ -11,6 +11,9 @@ wikipedia: force_look common
 
 ngrams: force_look common
 	cd src/ngrams; $(MAKE) $(MFLAGS)
+
+collocations: force_look common
+	cd src/collocations; $(MAKE) $(MFLAGS)
 
 test: all force_look
 	cd src/tests; PATH="../../bin/:$$PATH"; ./driver.py tests.txt
