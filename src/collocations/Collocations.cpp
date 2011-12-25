@@ -19,6 +19,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 #include <iostream>
+#include <fstream>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -27,8 +28,27 @@
 #include <unordered_set>
 #include <boost/algorithm/string.hpp>
 
+#include <stdio.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <math.h>
+
+#include "utilities.h"
+#include "merge.h"
+
 using namespace std;
 using namespace boost;
+
+const size_t buf_size = 1024*1024;
+
+struct {
+  bool verbose;
+  size_t splitSize;
+  unsigned int numThreads;
+} options;
+
+#define VERBOSE(code) if(options.verbose) { code; }
 
 struct CountPair {
   string w;
@@ -52,6 +72,23 @@ struct CountPair {
   }
 };
 
+struct FileSplit
+{
+  size_t start;
+  size_t end;
+  size_t numSplits;
+
+  FileSplit() {}
+  FileSplit(size_t start, size_t end, size_t numSplits)
+    : start(start), end(end), numSplits(numSplits) { }
+
+  string str() {
+    ostringstream os;
+    os << "[" << start << ", " << end << ")";
+    return os.str();
+  }
+};
+
 /// Splits a sentence into words (tokens separated by one or more
 /// spaces).
 void words(string& str, vector<string>& vec) 
@@ -71,10 +108,21 @@ void words(string& str, vector<string>& vec)
   }
 }
 
-/// Destructively Removes duplicates from a vector.
-void nub(vector<string>& vec) 
+void copyStream(FILE* in, FILE* out)
 {
-  unordered_set<string> hs;
+  const size_t buf_size = 10*1024*1024;
+  char* buf = new char[buf_size];
+  while(!feof(in)) {
+    size_t count = fread(buf, 1, buf_size, in);
+    fwrite(buf, 1, count, out);
+  }
+  delete[] buf;
+}
+
+/// Destructively Removes duplicates from a vector.
+template<class T> void nub(vector<T>& vec) 
+{
+  unordered_set<T> hs;
   hs.insert(vec.begin(), vec.end());
   vec.assign(hs.begin(), hs.end());
 }
@@ -103,9 +151,11 @@ void sentenceCounts(vector<string>& sentence, vector<vector<string>>& context,
 /// index. Returns the index of the first sentence of the next
 /// paragraph or an index after the end of the list if there are no
 /// paragraphs left.
-int paragraphCounts(unordered_map<string, unordered_map<string, long>>& ht,
-                    vector<string>& lines, size_t offset) 
+void paragraphCounts(unordered_map<string, unordered_map<string, long>>& ht,
+                    vector<string>& lines)
 {  
+  size_t offset = 0;
+
   // skip empty lines (if any)
   while(offset < lines.size() && trim_copy(lines[offset]) == "") { offset++; }
 
@@ -114,7 +164,7 @@ int paragraphCounts(unordered_map<string, unordered_map<string, long>>& ht,
   // and after current sentence.
   vector<vector<string>> paragraph;
   paragraph.push_back(vector<string>());
-  while(offset < lines.size() && trim_copy(lines[offset]) != "") {
+  while(offset < lines.size()) {
     paragraph.resize(paragraph.size()+1);
     vector<string>* lineWords = &paragraph[paragraph.size()-1];
     words(lines[offset], *lineWords);
@@ -128,6 +178,7 @@ int paragraphCounts(unordered_map<string, unordered_map<string, long>>& ht,
   for(size_t i = 1; i < paragraph.size() - 1; i++) {
     context.clear();
     context.push_back(paragraph[i-1]);
+    context.push_back(paragraph[i]);
     context.push_back(paragraph[i+1]);
 
     sentenceCounts(paragraph[i], context, counts);
@@ -137,22 +188,34 @@ int paragraphCounts(unordered_map<string, unordered_map<string, long>>& ht,
   for(auto cp : counts) {
     ht[cp.first][cp.second] += 1;
   }
-
-  return offset;
 }
 
-/// Counts colocations for a document, i.e. a set of paragraphs
-/// separated by one or more empty lines.
-void documentCounts(vector<string>& lines, vector<CountPair>& counts)
+/// Counts colocations for a single split and saves the result in a
+/// temporary file, whose handle is returned.
+FILE* splitCounts(const char* filePath, FileSplit split)
 {
-  /// Accumulate counts in a hash map one paragraph at a time and then
-  /// return sored counts in a vector..
-  size_t offset = 0;
+  ifstream file(filePath);
+  file.seekg(split.start);
+  vector<string> paragraph;
   unordered_map<string, unordered_map<string, long>> ht;
-  while(offset < lines.size()) {
-    offset = paragraphCounts(ht, lines, offset);
+  string line;
+  while(file.good() && (size_t)file.tellg() < split.end) {
+    getline(file, line);
+    if(line == "") {
+      // end of paragraph
+      paragraphCounts(ht, paragraph);
+      paragraph.clear();
+      continue;
+    }
+    paragraph.push_back(line);
   }
 
+  paragraphCounts(ht, paragraph);  
+  file.close();
+
+  cerr << "done ht" << endl;
+
+  vector<CountPair> counts;
   size_t i = 0;
   for(auto kv1 : ht) {
     for(auto kv2 : kv1.second) {
@@ -164,24 +227,210 @@ void documentCounts(vector<string>& lines, vector<CountPair>& counts)
     }
   }
 
+  cerr << "sort" << endl;
   sort(counts.begin(), counts.end());
+
+  cerr << "write" << endl;
+  FILE* out = tmpfile();
+  for(auto cp : counts) {
+    fprintf(out, "%ld%c%s %s\n", cp.count, COUNT_SEPARATOR, cp.w.c_str(), cp.v.c_str());
+  }
+  rewind(out);
+  return out;
+}
+
+/// Merges splits until at most 'max' splits remain. All file handles
+/// associated with merged splits are automatically closed.
+void mergeSplits(vector<FILE*>& splits, const unsigned int max)
+{
+  while(splits.size() > max) {
+    FILE* f1 = splits[0];
+    FILE* f2 = splits[1];
+
+    FILE* out = tmpfile();
+    mergeCounts(f1, f2, out);
+    fclose(f1);
+    fclose(f2);
+
+    splits.erase(splits.begin(), splits.begin()+2);
+    splits.push_back(out);
+  }
+}
+
+
+/// Counts collocations for multiple FileSplits and merges them into one count file.
+FILE* multipleSplitsCounts(const char* filePath, vector<FileSplit> splits) 
+{
+  vector<FILE*> countFiles;
+  for(auto split : splits) {
+    VERBOSE(cerr << "Count collocations for split " << split.str() << endl);
+    FILE* countFile = splitCounts(filePath, split);
+    VERBOSE(cerr << "done" << endl);
+    countFiles.push_back(countFile);
+    mergeSplits(countFiles, 1);
+  }
+
+  return countFiles.size() == 1 ? countFiles[0] : NULL;
+}
+
+size_t seekToParagraph(FILE* f, size_t offset)
+{
+  fseek(f, offset, SEEK_SET);
+  // offset might be between two newlines of a pagraph boundary, in
+  // which case our forward-looking method will only see one newline
+  // and will fail to break the paragraph. That's ok, as we will
+  // simply break after next paragraph Since splits are usually
+  // hundreds of megabytes in size, a few kilobatyes extra per split
+  // are fine.
+  char buf[buf_size];
+  char lastChar = '\0';
+  while(!feof(f)) {
+    int cRead = fread(buf, 1, buf_size, f);
+    for(int i = 0; i < cRead; i++) {
+      if(lastChar == '\n' && buf[i] == lastChar) {
+        // end of paragraph
+        fseek(f, offset + i, SEEK_SET);
+        return ftell(f);
+      }
+
+      lastChar = buf[i];
+    }
+
+    // We've scanned the buffer and no paragraph end. Read more data
+    // from file.
+  }
+
+  // we've reached end of file. Return the current position as end of paragraph
+  return ftell(f);
+}
+
+/// Finds split points at paragraph boundaries, with each split of
+/// size approximately maxSize
+void findSplitPoints(FILE* f, size_t maxSize, vector<size_t>& splitPoints) 
+{
+  // Compute approximate split points, then move them forward to align
+  // to paragraph boundaries. Finally sort them and get rid of any
+  // duplicates.
+  struct stat info;
+  fstat(fileno(f), &info);
+  size_t fileSize = info.st_size;
+  splitPoints.clear();
+  double numSplits = ceil((double)fileSize / maxSize);
+  for(double i = 1; i < numSplits; i++) {
+    size_t estimatedSplitIndex = (int)(i * fileSize / numSplits);
+    // align to paragraph
+    size_t splitIndex = seekToParagraph(f, estimatedSplitIndex);
+    splitPoints.push_back(splitIndex);   
+  }
+  splitPoints.insert(splitPoints.begin(), 0);
+  splitPoints.push_back(fileSize);
+
+  // This is mostly unnecessary. However, for extremely small splits
+  // and/or small files the split indices might overlap.
+  nub(splitPoints);
+  sort(splitPoints.begin(), splitPoints.end());
+}
+
+void splitFile(FILE* f, size_t maxSize, vector<FileSplit>& splits)
+{
+  size_t initialPos = ftell(f);
+  vector<size_t> ends;
+  findSplitPoints(f, maxSize, ends);
+  VERBOSE(cerr << "Total splits: " << ends.size()-1 << endl)
+
+  for(size_t i = 0; i < ends.size()-1; i++) {
+    FileSplit split(ends[i], ends[i+1], ends.size()-1);
+    splits.push_back(split);
+    VERBOSE(cerr << "  - " << split.str() << endl);
+  }
+
+  fseek(f, initialPos, SEEK_SET);
+}
+
+/// Counts collocations in the given file, outputting the results to stdout.
+int countCollocations(const char* filePath)
+{
+  FILE* inputFile = fopen(filePath, "r");
+  if(inputFile == NULL) {
+    cerr << "Could not open file " << filePath << endl;
+    return 1;
+  }
+
+  vector<FileSplit> splits;
+  VERBOSE(cerr << "Computing splits..." << endl);
+  splitFile(inputFile, options.splitSize, splits);
+
+  VERBOSE(cerr << "Counting..." << endl);
+  FILE* out = multipleSplitsCounts(filePath, splits);
+  copyStream(out, stdout);
+  fclose(out);
+
+  fclose(inputFile);
+  return 0;
+}
+
+void printUsage(const char* name)
+{
+  printf("Usage: %s [-m LIMIT] [-v] file\n", name);
 }
 
 int main(int argc, char* argv[])
 {
-  // Read all lines from stdin, call documentCounts, print resulting
-  // counts to stdout and quit.
-  vector<string> lines;
-  string line;
-  while(getline(cin, line)) {
-    lines.push_back(line);
+  // Default options
+  options.verbose = false;
+  options.splitSize = 1*1024*1024;
+  options.numThreads = 1;
+
+  // Parse options
+  vector<string> unparsedOpts;
+  for(int i=1; i<argc; i++) {
+    if(strcmp("-m", argv[i]) == 0 && i<argc-1) {
+      long multiplier = 1;
+      char unit = '\0';
+      sscanf(argv[i+1], "%ld%c", &options.splitSize, &unit);
+      unit = tolower(unit);
+
+      switch(unit) {
+      case 'b':
+        multiplier = 512;
+        break;
+      case 'k':
+        multiplier = 1024;
+        break;
+      case 'm':
+        multiplier = 1024*1024;
+        break;
+      case 'g':
+        multiplier = 1024*1024*1024;
+        break;
+      case'\0':
+        multiplier = 1;
+        break;
+      default:
+        printUsage(argv[0]);
+        return 1;
+      }
+      
+      options.splitSize *= multiplier;
+      i++;
+    }
+    else if(strcmp("-v", argv[i]) == 0) {
+      options.verbose = true;
+    }
+    else if(strcmp("-p", argv[i]) == 0) {
+      sscanf(argv[i+1], "%d", &options.numThreads);
+      i++;
+    }
+    else {
+      unparsedOpts.push_back(argv[i]);
+    }
   }
 
-  vector<CountPair> counts;
-  documentCounts(lines, counts);
-  for(auto cp : counts) {
-    cout << cp.count << "\t" << cp.w << " " << cp.v << endl;
+  // the only argument left should be the filename
+  if(unparsedOpts.size() != 1) {
+    printUsage(argv[0]);
+    return 1;
   }
 
-  return 0;
+  return countCollocations(unparsedOpts[0].c_str());
 }

@@ -115,6 +115,8 @@ int mergeCounts(FILE* src1, FILE* src2, FILE* out)
 
   if(!feof(src1) || !feof(src2))
     throw string("Read error. All counts have been processed, but end of file has not been reached.");
+
+  rewind(out);
   
   return c_total;
 }
