@@ -27,7 +27,8 @@
 /*
    PCRE
 */
-pcre* makePCRE(const char* expr, int options) {
+pcre* makePCRE(const char* expr, int options)
+{
   const char* error;
   int erroffset;
   pcre *re = pcre_compile(expr, options, &error, &erroffset, NULL);
@@ -75,3 +76,25 @@ char* deconstructCount(const char* str, char* ngram, long* count)
   return ngram;
 }
 
+
+/*
+  TIME
+*/
+
+/// Computes the ETA of a task in hours:minutes:seconds
+void eta(timespec start, unsigned int current, unsigned int total,
+         unsigned int* hours, unsigned int* minutes, unsigned int* seconds)
+{
+  timespec now;
+  clock_gettime(CLOCK_MONOTONIC, &now);
+  double elapsed_sec = now.tv_sec - start.tv_sec;
+  double speed = (double)current / elapsed_sec;
+  double workRemaining = total - current;
+  double remaining_sec = workRemaining / speed;
+  
+  *hours = (int)(remaining_sec / (60*60));
+  remaining_sec -= *hours*60*60;
+  *minutes = (int)(remaining_sec / 60);
+  remaining_sec -= *minutes*60;
+  *seconds = remaining_sec;
+}

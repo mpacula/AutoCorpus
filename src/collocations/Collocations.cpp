@@ -26,13 +26,16 @@
 #include <algorithm>
 #include <unordered_map>
 #include <unordered_set>
+#include <queue>
 #include <boost/algorithm/string.hpp>
+#include <boost/thread.hpp>
 
 #include <stdio.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
 #include <math.h>
+#include <time.h>
 
 #include "utilities.h"
 #include "merge.h"
@@ -43,10 +46,36 @@ using namespace boost;
 const size_t buf_size = 1024*1024;
 
 struct {
+  string filePath;
   bool verbose;
   size_t splitSize;
   unsigned int numThreads;
 } options;
+
+struct {
+  size_t totalSplits;
+  size_t splitsComplete;
+  size_t totalMerges;
+  size_t mergesScheduled;
+  size_t mergesComplete;
+  timespec startTime;
+  mutex mtx;
+
+  bool splitsDone()
+  {
+    return splitsComplete >= totalSplits;
+  }
+
+  bool mergesDone()
+  {
+    return mergesComplete >= totalMerges;
+  }
+
+  bool done()
+  {
+    return splitsDone() && mergesDone();
+  }
+} progress;
 
 #define VERBOSE(code) if(options.verbose) { code; }
 
@@ -118,6 +147,40 @@ void copyStream(FILE* in, FILE* out)
   }
   delete[] buf;
 }
+
+void reportSplitDone()
+{
+  progress.mtx.lock();
+
+  progress.splitsComplete++;
+  unsigned int h, m, s;
+  eta(progress.startTime, progress.splitsComplete, progress.totalSplits, 
+      &h, &m, &s);
+  
+  VERBOSE(fprintf(stderr, "%lu/%lu (%.2f%%) splits complete. eta: %uh %02um %02us\n",
+                  progress.splitsComplete, progress.totalSplits,
+                  100.0 * progress.splitsComplete / progress.totalSplits,
+                  h, m, s));
+
+  progress.mtx.unlock();
+} 
+
+void reportMergeDone()
+{
+  progress.mtx.lock();
+
+  progress.mergesComplete++;
+  unsigned int h, m, s;
+  eta(progress.startTime, progress.mergesComplete, progress.totalMerges, 
+      &h, &m, &s);
+  
+  VERBOSE(fprintf(stderr, "%lu/%lu (%.2f%%) merges complete. eta: %uh %02um %02us\n",
+                  progress.mergesComplete, progress.totalMerges,
+                  100.0 * progress.mergesComplete / progress.totalMerges,
+                  h, m, s));
+
+  progress.mtx.unlock();
+} 
 
 /// Destructively Removes duplicates from a vector.
 template<class T> void nub(vector<T>& vec) 
@@ -213,8 +276,6 @@ FILE* splitCounts(const char* filePath, FileSplit split)
   paragraphCounts(ht, paragraph);  
   file.close();
 
-  cerr << "done ht" << endl;
-
   vector<CountPair> counts;
   size_t i = 0;
   for(auto kv1 : ht) {
@@ -227,50 +288,16 @@ FILE* splitCounts(const char* filePath, FileSplit split)
     }
   }
 
-  cerr << "sort" << endl;
   sort(counts.begin(), counts.end());
 
-  cerr << "write" << endl;
   FILE* out = tmpfile();
   for(auto cp : counts) {
     fprintf(out, "%ld%c%s %s\n", cp.count, COUNT_SEPARATOR, cp.w.c_str(), cp.v.c_str());
   }
   rewind(out);
+
+  reportSplitDone();
   return out;
-}
-
-/// Merges splits until at most 'max' splits remain. All file handles
-/// associated with merged splits are automatically closed.
-void mergeSplits(vector<FILE*>& splits, const unsigned int max)
-{
-  while(splits.size() > max) {
-    FILE* f1 = splits[0];
-    FILE* f2 = splits[1];
-
-    FILE* out = tmpfile();
-    mergeCounts(f1, f2, out);
-    fclose(f1);
-    fclose(f2);
-
-    splits.erase(splits.begin(), splits.begin()+2);
-    splits.push_back(out);
-  }
-}
-
-
-/// Counts collocations for multiple FileSplits and merges them into one count file.
-FILE* multipleSplitsCounts(const char* filePath, vector<FileSplit> splits) 
-{
-  vector<FILE*> countFiles;
-  for(auto split : splits) {
-    VERBOSE(cerr << "Count collocations for split " << split.str() << endl);
-    FILE* countFile = splitCounts(filePath, split);
-    VERBOSE(cerr << "done" << endl);
-    countFiles.push_back(countFile);
-    mergeSplits(countFiles, 1);
-  }
-
-  return countFiles.size() == 1 ? countFiles[0] : NULL;
 }
 
 size_t seekToParagraph(FILE* f, size_t offset)
@@ -347,23 +374,156 @@ void splitFile(FILE* f, size_t maxSize, vector<FileSplit>& splits)
   fseek(f, initialPos, SEEK_SET);
 }
 
-/// Counts collocations in the given file, outputting the results to stdout.
-int countCollocations(const char* filePath)
+/// Stores pending counting tasks for splits
+queue<FileSplit> splitQueue;
+mutex splitMutex;
+
+/// Stores pending merge counts
+queue<FILE*> mergeQueue;
+mutex mergeMutex;
+
+/// Gets next available file split and removed it from the queue.
+/// Thread-safe.
+FileSplit* claimSplit(FileSplit& split)
 {
-  FILE* inputFile = fopen(filePath, "r");
+  splitMutex.lock();
+  if(splitQueue.empty()) {
+    splitMutex.unlock();
+    return NULL;
+  }
+
+  // at least one element present
+  split = splitQueue.front();
+  splitQueue.pop();
+  splitMutex.unlock();
+  return &split;
+}
+
+void scheduleSplit(FileSplit split) 
+{
+  splitMutex.lock();
+  splitQueue.push(split);
+  splitMutex.unlock();
+}
+
+void scheduleMerge(FILE* file) 
+{
+  mergeMutex.lock();
+  mergeQueue.push(file);
+  mergeMutex.unlock();
+}
+
+bool claimMerge(FILE*& f1, FILE*& f2)
+{
+  mergeMutex.lock();
+  if(mergeQueue.size() < 2) {
+    mergeMutex.unlock();
+    return false;
+  }
+  
+  // we have at least two files to merge
+  f1 = mergeQueue.front();
+  mergeQueue.pop();
+  f2 = mergeQueue.front();
+  mergeQueue.pop();
+
+  mergeMutex.unlock();
+  return true;
+}
+
+/// Takes splits off the split queue and counts collocations in the
+/// split
+void workerTask() 
+{
+  while(!progress.done()) {
+    FileSplit split;
+    if(claimSplit(split)) {
+      // we got ourselves a split task
+      FILE* out = splitCounts(options.filePath.c_str(), split);
+      scheduleMerge(out);
+      continue;
+    }
+
+    // we didn't get a split, but maybe we'll get a merge?
+    FILE* f1, *f2;
+    if(claimMerge(f1, f2)) {
+      // we got a merge task!
+      FILE* out = tmpfile();
+      mergeCounts(f1, f2, out);
+      reportMergeDone();
+      fclose(f1);
+      fclose(f2);
+      scheduleMerge(out);
+      continue;
+    }
+
+    // We didn't get a split or a merge,. since none are available.
+    // Wait a short period of time and retry;
+    sleep(1);
+  }
+
+  VERBOSE(cerr << "Worker thread terminating." << endl);
+}
+
+int getRequiredMergeCount(unsigned int n)
+{
+  unsigned int c = 0;
+  while(n > 1)
+    {
+      c += floor((double)n/2);
+      n = ceil((double)n/2);
+    }
+  return c;
+}
+
+/// Counts collocations in the given file, outputting the results to
+/// stdout.
+int countCollocations()
+{
+  FILE* inputFile = fopen(options.filePath.c_str(), "r");
   if(inputFile == NULL) {
-    cerr << "Could not open file " << filePath << endl;
+    cerr << "Could not open file " << options.filePath << endl;
     return 1;
   }
 
   vector<FileSplit> splits;
   VERBOSE(cerr << "Computing splits..." << endl);
   splitFile(inputFile, options.splitSize, splits);
+  progress.totalSplits = splits.size();
+  progress.totalMerges = getRequiredMergeCount(progress.totalSplits);
+
+  for(auto split : splits) {
+    scheduleSplit(split);
+  }
 
   VERBOSE(cerr << "Counting..." << endl);
-  FILE* out = multipleSplitsCounts(filePath, splits);
-  copyStream(out, stdout);
-  fclose(out);
+  clock_gettime(CLOCK_MONOTONIC, &progress.startTime);
+  
+  vector<thread*> workers;
+  for(unsigned int i = 0; i < options.numThreads; i++) {
+    thread* worker = new thread(workerTask);
+    workers.push_back(worker);
+  }
+
+  for(auto worker : workers) {
+    worker->join();
+    delete worker;
+  }
+
+  if(mergeQueue.size() != 1) {
+    cerr << "Merge queue empty or too many results (" << mergeQueue.size() << "). This is a bug." << endl;
+
+    while(mergeQueue.size() > 0) {
+      fclose(mergeQueue.front());
+      mergeQueue.pop();
+    }
+    return 1;
+  }
+
+  VERBOSE(cerr << "Writing results to stdout." << endl);
+  copyStream(mergeQueue.front(), stdout);
+  fclose(mergeQueue.front());
+  mergeQueue.pop();
 
   fclose(inputFile);
   return 0;
@@ -371,7 +531,7 @@ int countCollocations(const char* filePath)
 
 void printUsage(const char* name)
 {
-  printf("Usage: %s [-m LIMIT] [-v] file\n", name);
+  printf("Usage: %s [-m LIMIT] [-v] [-t THREADS] file\n", name);
 }
 
 int main(int argc, char* argv[])
@@ -417,7 +577,7 @@ int main(int argc, char* argv[])
     else if(strcmp("-v", argv[i]) == 0) {
       options.verbose = true;
     }
-    else if(strcmp("-p", argv[i]) == 0) {
+    else if(strcmp("-t", argv[i]) == 0) {
       sscanf(argv[i+1], "%d", &options.numThreads);
       i++;
     }
@@ -432,5 +592,6 @@ int main(int argc, char* argv[])
     return 1;
   }
 
-  return countCollocations(unparsedOpts[0].c_str());
+  options.filePath = unparsedOpts[0];
+  return countCollocations();
 }

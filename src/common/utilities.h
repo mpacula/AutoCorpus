@@ -29,6 +29,7 @@
 #include <sstream>
 #include <pcre.h>
 #include <string.h>
+#include "time.h"
 
 #define NGRAM_SEPARATOR '\t'
 #define COUNT_SEPARATOR NGRAM_SEPARATOR
@@ -54,5 +55,7 @@ struct Error
 pcre* makePCRE(const char* expr, int options);
 long findchr(const char* str, char ch);
 char* deconstructCount(const char* str, char* ngram, long* count);
+void eta(timespec start, unsigned int current, unsigned int total,
+         unsigned int* hours, unsigned int* minutes, unsigned int* seconds);
 
 #endif // utilities_h

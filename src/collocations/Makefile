@@ -1,6 +1,6 @@
 CC=g++
 BIN = ../../bin
-OPTIONS =  -Wall -Iboost -I../common -std=c++0x -lpcre
+OPTIONS =  -Wall -Iboost -I../common -std=c++0x -lpcre -lrt -lboost_thread
 COMMON_OBJ = ../common/utilities.o ../common/merge.o
 
 all: $(BIN)/collocations

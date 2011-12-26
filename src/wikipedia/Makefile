@@ -1,5 +1,5 @@
 CC = g++
-LIBS = -lpcre
+LIBS = -lpcre -lrt
 CFLAGS = -Wall -O3 -I "../common"
 COMMON_OBJ = ../common/utilities.o ../common/PCREMatcher.o
 COMPILE = $(CC) $(CFLAGS) -c 
@@ -14,10 +14,10 @@ TAGS: $(wildcard *.cpp)
 	etags $(wildcard *.cpp)
 
 $(BIN)/wiki-textify: $(OBJFILES) Textify.o
-	${CC} $(CFLAGS) -lpcre $(OBJFILES) Textify.o -lpcre -o $(BIN)/wiki-textify
+	${CC} $(CFLAGS) -lpcre $(OBJFILES) Textify.o $(LIBS) -o $(BIN)/wiki-textify
 
 $(BIN)/sentences: $(OBJFILES) Sentences.o
-	${CC} $(CFLAGS) $(OBJFILES) Sentences.o -lpcre -o $(BIN)/sentences
+	${CC} $(CFLAGS) $(OBJFILES) Sentences.o $(LIBS) -o $(BIN)/sentences
 
 $(BIN)/wiki-articles: articles.py wiki.py
 	mkdir -p $(LIB)

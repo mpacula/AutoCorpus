@@ -1,15 +1,16 @@
 CC = g++
 LIBS = 
-CFLAGS = -Wall -std=c++0x -O3 -lpcre
+CFLAGS = -Wall -std=c++0x -O3
 COMPILE = $(CC) $(CFLAGS)
 ALL_OBJFILES = $(patsubst %.cpp,%.o,$(wildcard *.cpp))
 OBJFILES := $(ALL_OBJFILES)
+LIBS= -lpcre -lrt
 BIN = ../../bin
 
 all: TAGS $(OBJFILES) $(BIN)/merge-counts
 
 $(BIN)/merge-counts: MergeCounts.cpp merge.o utilities.o
-	$(COMPILE) merge.o utilities.o -lpcre MergeCounts.cpp -o $(BIN)/merge-counts
+	$(COMPILE) merge.o utilities.o MergeCounts.cpp $(LIBS) -o $(BIN)/merge-counts
 
 TAGS: $(wildcard *.cpp)
 	etags $(wildcard *.cpp)
