@@ -442,13 +442,30 @@ bool claimMerge(FILE*& f1, FILE*& f2)
 
 /// Takes splits off the split queue and counts collocations in the
 /// split
-void workerTask() 
+void splitTask() 
 {
   while(!progress.done()) {
-    // For large datasets it is important to do merges
-    // first. Otherwsise we'll end up with thousands of unmerged
-    // splits and run out of disk space.
-    
+    FileSplit split;
+    // we check for small mergeQueue size so that we don't generate
+    // too many splits that go unmerged. This is to preserve disk
+    // space.
+    if(mergeQueue.size() < 5 && claimSplit(split)) {
+      // we got ourselves a split task
+      FILE* out = splitCounts(options.filePath.c_str(), split);
+      scheduleMerge(out);
+      continue;
+    }
+
+    // wait for splits
+    sleep(1);
+  }
+
+  VERBOSE(cerr << "Split worker thread terminating." << endl);
+}
+
+void mergeTask() 
+{
+  while(!progress.done()) {
     FILE* f1, *f2;
     if(claimMerge(f1, f2)) {
       // we got a merge task!
@@ -460,22 +477,12 @@ void workerTask()
       scheduleMerge(out);
       continue;
     }
-
-    FileSplit split;
-    if(claimSplit(split)) {
-      // we got ourselves a split task
-      FILE* out = splitCounts(options.filePath.c_str(), split);
-      scheduleMerge(out);
-      continue;
-    }
-
-
-    // We didn't get a split or a merge,. since none are available.
-    // Wait a short period of time and retry;
+    
+    // wait for merges
     sleep(1);
   }
 
-  VERBOSE(cerr << "Worker thread terminating." << endl);
+  VERBOSE(cerr << "Merge worker thread terminating." << endl);
 }
 
 int getRequiredMergeCount(unsigned int n)
@@ -514,7 +521,13 @@ int countCollocations()
   
   vector<thread*> workers;
   for(unsigned int i = 0; i < options.numThreads; i++) {
-    thread* worker = new thread(workerTask);
+    // merge tasks are IO bound and split tasks are CPU bound. It's ok
+    // to use separate threads for the merge tasks without slowing
+    // down counting in splits.
+    thread* worker = new thread(mergeTask);
+    workers.push_back(worker);
+
+    worker = new thread(splitTask);
     workers.push_back(worker);
   }
 
