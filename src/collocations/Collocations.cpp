@@ -111,9 +111,14 @@ struct FileSplit
   FileSplit(size_t start, size_t end, size_t numSplits)
     : start(start), end(end), numSplits(numSplits) { }
 
+  double sizeMB()
+  {
+    return ((double)(end - start) / pow(1024,2));
+  }
+
   string str() {
     ostringstream os;
-    os << "[" << start << ", " << end << ")";
+    os << "[" << start << ", " << end << "): " << setiosflags(ios::fixed) << setprecision(2) << sizeMB() << "MB";
     return os.str();
   }
 };
@@ -353,7 +358,7 @@ void findSplitPoints(FILE* f, size_t maxSize, vector<size_t>& splitPoints)
   splitPoints.clear();
   double numSplits = ceil((double)fileSize / maxSize);
   for(double i = 1; i < numSplits; i++) {
-    size_t estimatedSplitIndex = (int)(i * fileSize / numSplits);
+    size_t estimatedSplitIndex = (long)(i * fileSize / numSplits);
     // align to paragraph
     size_t splitIndex = seekToParagraph(f, estimatedSplitIndex);
     splitPoints.push_back(splitIndex);   
