@@ -148,7 +148,14 @@ void copyStream(FILE* in, FILE* out)
   delete[] buf;
 }
 
-void reportSplitDone()
+double fileSizeGB(FILE* f)
+{
+  struct stat info;
+  fstat(fileno(f), &info);
+  return (double)info.st_size / (1024*1024*1024);
+}
+
+void reportSplitDone(FILE* result)
 {
   progress.mtx.lock();
 
@@ -157,15 +164,16 @@ void reportSplitDone()
   eta(progress.startTime, progress.splitsComplete, progress.totalSplits, 
       &h, &m, &s);
   
-  VERBOSE(fprintf(stderr, "%lu/%lu (%.2f%%) splits complete. eta: %uh %02um %02us\n",
+  VERBOSE(fprintf(stderr, "%lu/%lu (%.2f%%) splits complete. output: %.2fGB. eta: %uh %02um %02us\n",
                   progress.splitsComplete, progress.totalSplits,
                   100.0 * progress.splitsComplete / progress.totalSplits,
+                  fileSizeGB(result),
                   h, m, s));
 
   progress.mtx.unlock();
 } 
 
-void reportMergeDone()
+void reportMergeDone(FILE* result)
 {
   progress.mtx.lock();
 
@@ -174,9 +182,10 @@ void reportMergeDone()
   eta(progress.startTime, progress.mergesComplete, progress.totalMerges, 
       &h, &m, &s);
   
-  VERBOSE(fprintf(stderr, "%lu/%lu (%.2f%%) merges complete. eta: %uh %02um %02us\n",
+  VERBOSE(fprintf(stderr, "%lu/%lu (%.2f%%) merges complete. output: %.2fGB. eta: %uh %02um %02us\n",
                   progress.mergesComplete, progress.totalMerges,
                   100.0 * progress.mergesComplete / progress.totalMerges,
+                  fileSizeGB(result),
                   h, m, s));
 
   progress.mtx.unlock();
@@ -296,7 +305,7 @@ FILE* splitCounts(const char* filePath, FileSplit split)
   }
   rewind(out);
 
-  reportSplitDone();
+  reportSplitDone(out);
   return out;
 }
 
@@ -436,6 +445,22 @@ bool claimMerge(FILE*& f1, FILE*& f2)
 void workerTask() 
 {
   while(!progress.done()) {
+    // For large datasets it is important to do merges
+    // first. Otherwsise we'll end up with thousands of unmerged
+    // splits and run out of disk space.
+    
+    FILE* f1, *f2;
+    if(claimMerge(f1, f2)) {
+      // we got a merge task!
+      FILE* out = tmpfile();
+      mergeCounts(f1, f2, out);
+      reportMergeDone(out);
+      fclose(f1);
+      fclose(f2);
+      scheduleMerge(out);
+      continue;
+    }
+
     FileSplit split;
     if(claimSplit(split)) {
       // we got ourselves a split task
@@ -444,18 +469,6 @@ void workerTask()
       continue;
     }
 
-    // we didn't get a split, but maybe we'll get a merge?
-    FILE* f1, *f2;
-    if(claimMerge(f1, f2)) {
-      // we got a merge task!
-      FILE* out = tmpfile();
-      mergeCounts(f1, f2, out);
-      reportMergeDone();
-      fclose(f1);
-      fclose(f2);
-      scheduleMerge(out);
-      continue;
-    }
 
     // We didn't get a split or a merge,. since none are available.
     // Wait a short period of time and retry;
