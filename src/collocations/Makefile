@@ -1,17 +1,25 @@
-CC=g++
+CC = g++
+LIBS = -lpcre -lrt -lboost_thread
+COMMON_OBJ = ../common/merge.o ../common/PCREMatcher.o ../common/utilities.o
+CFLAGS = -Wall -std=c++0x -O3 -I "../common"
+COMPILE = $(CC) $(CFLAGS) -c
+ALL_OBJFILES = $(patsubst %.cpp,%.o,$(wildcard *.cpp))
+OBJFILES = $(filter-out Collocations.o MutualInformation.o, $(ALL_OBJFILES)) $(COMMON_OBJ)
 BIN = ../../bin
-OPTIONS =  -Wall -Iboost -I../common -std=c++0x -lpcre -lrt -lboost_thread
-COMMON_OBJ = ../common/utilities.o ../common/merge.o
 
-all: $(BIN)/collocations
+all: TAGS $(BIN)/collocations $(BIN)/mutual-information
 
-prof: $(BIN)/collocations-prof
+TAGS: $(wildcard *.cpp)
+	etags $(wildcard *.cpp)
 
-$(BIN)/collocations: Collocations.cpp
-	$(CC) $(COMMON_OBJ) Collocations.cpp $(OPTIONS) -O3 -o $(BIN)/collocations
+$(BIN)/collocations: $(OBJFILES) Collocations.o
+	${CC} $(CFLAGS) $(OBJFILES) Collocations.o $(LIBS) -o $(BIN)/collocations
 
-$(BIN)/collocations-prof:
-	$(CC) $(COMMON_OBJ) Collocations.cpp $(OPTIONS) -g -o $(BIN)/collocations-prof
+$(BIN)/mutual-information: $(OBJFILES) MutualInformation.o
+	${CC} $(CFLAGS) $(OBJFILES) MutualInformation.o $(LIBS) -o $(BIN)/mutual-information
+
+%.o: %.cpp Makefile
+	$(COMPILE) -o $@ $<
 
 clean:
-	rm -f *$(BIN)/cololcations
+	rm -f *.o TAGS $(BIN)/collocations $(BIN)/mututal-information

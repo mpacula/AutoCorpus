@@ -62,7 +62,7 @@ void inline printCount(FILE* out, const char* key, const long count)
 
 /// Merges two sorted files with counts into a third sorted file with
 /// the sum of counts. Returns the sum of counts.
-int mergeCounts(FILE* src1, FILE* src2, FILE* out)
+size_t mergeCounts(FILE* src1, FILE* src2, FILE* out)
 { 
   bool hasMore1, hasMore2;
   char key1[buf_size];

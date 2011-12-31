@@ -24,6 +24,8 @@
 */
 #include "utilities.h"
 
+using namespace std;
+
 /*
    PCRE
 */
@@ -97,4 +99,36 @@ void eta(timespec start, unsigned int current, unsigned int total,
   *minutes = (int)(remaining_sec / 60);
   remaining_sec -= *minutes*60;
   *seconds = remaining_sec;
+}
+
+// Gets file read progress, in %
+double readProgress(ifstream& file, long fileSize)
+{
+  return 100.0*file.tellg() / fileSize;
+}
+
+
+/// Splits a sentence into words (tokens separated by one or more
+/// spaces).
+void words(string& str, vector<string>& vec) 
+{
+  size_t start = 0;
+  for(size_t i = 0; i < str.size(); i++) {
+    if(isspace(str[i])) {
+      if(i > start) {
+        vec.push_back(str.substr(start, i-start));        
+      } 
+      start = i+1;
+    }
+  }
+
+  if(start < str.size()) {
+    vec.push_back(str.substr(start, str.size()));
+  }
+}
+
+void words(char* str, vector<string>& vec) 
+{
+  string buf = str;
+  words(buf, vec);
 }

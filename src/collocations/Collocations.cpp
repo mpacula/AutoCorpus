@@ -49,7 +49,9 @@ struct {
   string filePath;
   bool verbose;
   size_t splitSize;
-  unsigned int numThreads;
+  unsigned int numSplitThreads;
+  unsigned int numMergeThreads;
+  unsigned int maxAllowedSplits;
 } options;
 
 struct {
@@ -123,24 +125,29 @@ struct FileSplit
   }
 };
 
-/// Splits a sentence into words (tokens separated by one or more
-/// spaces).
-void words(string& str, vector<string>& vec) 
+struct MergeRequest
 {
-  size_t start = 0;
-  for(size_t i = 0; i < str.size(); i++) {
-    if(str[i] == ' ') {
-      if(i > start) {
-        vec.push_back(str.substr(start, i-start));        
-      } 
-      start = i+1;
-    }
-  }
+  FILE* file;
+  size_t size;
 
-  if(start < str.size()) {
-    vec.push_back(str.substr(start, str.size()));
+  MergeRequest(FILE* file)
+    :  file(file) {
+    struct stat info;
+    fstat(fileno(file), &info);
+    size = info.st_size;
   }
+};
+
+bool operator > (const MergeRequest& mr1, const MergeRequest& mr2)
+{
+  return mr1.size > mr2.size;
 }
+
+bool operator < (const MergeRequest& mr1, const MergeRequest& mr2)
+{
+  return mr1.size < mr2.size;
+}
+
 
 void copyStream(FILE* in, FILE* out)
 {
@@ -231,10 +238,14 @@ void sentenceCounts(vector<string>& sentence, vector<vector<string>>& context,
 void paragraphCounts(unordered_map<string, unordered_map<string, long>>& ht,
                     vector<string>& lines)
 {  
-  size_t offset = 0;
+  if(lines.size() == 0)
+    return;
 
   // skip empty lines (if any)
+  size_t offset = 0;
   while(offset < lines.size() && trim_copy(lines[offset]) == "") { offset++; }
+  if(offset == lines.size())
+    return;
 
   // get lines for current paragraph. We add two sentinel empty sentences
   // at the beginning and end so that we always have a sentence before
@@ -284,7 +295,12 @@ FILE* splitCounts(const char* filePath, FileSplit split)
       paragraph.clear();
       continue;
     }
-    paragraph.push_back(line);
+    // so that the runtime/memory doesn't explode for pathological lines
+    // treat extremely long lines as noise
+    if(line.length() < 8192)
+      paragraph.push_back(line);
+    else
+      VERBOSE(cerr << "Ignoring very long line of length: " << line.length() << endl);
   }
 
   paragraphCounts(ht, paragraph);  
@@ -326,8 +342,8 @@ size_t seekToParagraph(FILE* f, size_t offset)
   char buf[buf_size];
   char lastChar = '\0';
   while(!feof(f)) {
-    int cRead = fread(buf, 1, buf_size, f);
-    for(int i = 0; i < cRead; i++) {
+    size_t cRead = fread(buf, 1, buf_size, f);
+    for(size_t i = 0; i < cRead; i++) {
       if(lastChar == '\n' && buf[i] == lastChar) {
         // end of paragraph
         fseek(f, offset + i, SEEK_SET);
@@ -393,7 +409,7 @@ queue<FileSplit> splitQueue;
 mutex splitMutex;
 
 /// Stores pending merge counts
-queue<FILE*> mergeQueue;
+priority_queue<MergeRequest, vector<MergeRequest>, greater<MergeRequest>> mergeQueue;
 mutex mergeMutex;
 
 /// Gets next available file split and removed it from the queue.
@@ -423,7 +439,7 @@ void scheduleSplit(FileSplit split)
 void scheduleMerge(FILE* file) 
 {
   mergeMutex.lock();
-  mergeQueue.push(file);
+  mergeQueue.push(MergeRequest(file));
   mergeMutex.unlock();
 }
 
@@ -436,9 +452,9 @@ bool claimMerge(FILE*& f1, FILE*& f2)
   }
   
   // we have at least two files to merge
-  f1 = mergeQueue.front();
+  f1 = mergeQueue.top().file;
   mergeQueue.pop();
-  f2 = mergeQueue.front();
+  f2 = mergeQueue.top().file;
   mergeQueue.pop();
 
   mergeMutex.unlock();
@@ -454,7 +470,7 @@ void splitTask()
     // we check for small mergeQueue size so that we don't generate
     // too many splits that go unmerged. This is to preserve disk
     // space.
-    if(mergeQueue.size() < 5 && claimSplit(split)) {
+    if(mergeQueue.size() < options.maxAllowedSplits && claimSplit(split)) {
       // we got ourselves a split task
       FILE* out = splitCounts(options.filePath.c_str(), split);
       scheduleMerge(out);
@@ -525,14 +541,13 @@ int countCollocations()
   clock_gettime(CLOCK_MONOTONIC, &progress.startTime);
   
   vector<thread*> workers;
-  for(unsigned int i = 0; i < options.numThreads; i++) {
-    // merge tasks are IO bound and split tasks are CPU bound. It's ok
-    // to use separate threads for the merge tasks without slowing
-    // down counting in splits.
-    thread* worker = new thread(mergeTask);
+  for(unsigned int i = 0; i < options.numSplitThreads; i++) {
+    thread* worker = new thread(splitTask);
     workers.push_back(worker);
+  }
 
-    worker = new thread(splitTask);
+  for(unsigned int i = 0; i < options.numMergeThreads; i++) {
+    thread* worker = new thread(mergeTask);
     workers.push_back(worker);
   }
 
@@ -545,15 +560,15 @@ int countCollocations()
     cerr << "Merge queue empty or too many results (" << mergeQueue.size() << "). This is a bug." << endl;
 
     while(mergeQueue.size() > 0) {
-      fclose(mergeQueue.front());
+      fclose(mergeQueue.top().file);
       mergeQueue.pop();
     }
     return 1;
   }
 
   VERBOSE(cerr << "Writing results to stdout." << endl);
-  copyStream(mergeQueue.front(), stdout);
-  fclose(mergeQueue.front());
+  copyStream(mergeQueue.top().file, stdout);
+  fclose(mergeQueue.top().file);
   mergeQueue.pop();
 
   fclose(inputFile);
@@ -570,7 +585,9 @@ int main(int argc, char* argv[])
   // Default options
   options.verbose = false;
   options.splitSize = 1*1024*1024;
-  options.numThreads = 1;
+  options.numSplitThreads = 1;
+  options.numMergeThreads = 1;
+  options.maxAllowedSplits = 5;
 
   // Parse options
   vector<string> unparsedOpts;
@@ -608,8 +625,16 @@ int main(int argc, char* argv[])
     else if(strcmp("-v", argv[i]) == 0) {
       options.verbose = true;
     }
-    else if(strcmp("-t", argv[i]) == 0) {
-      sscanf(argv[i+1], "%d", &options.numThreads);
+    else if(strcmp("-ts", argv[i]) == 0) {
+      sscanf(argv[i+1], "%d", &options.numSplitThreads);
+      i++;
+    }
+    else if(strcmp("-tm", argv[i]) == 0) {
+      sscanf(argv[i+1], "%d", &options.numMergeThreads);
+      i++;
+    }
+    else if(strcmp("-ms", argv[i]) == 0) {
+      sscanf(argv[i+1], "%d", &options.maxAllowedSplits);
       i++;
     }
     else {

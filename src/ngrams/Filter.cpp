@@ -41,23 +41,28 @@ private:
   long cBelow; // count of ngrams below threshold
   long cExpectedTotal; // number of ngrams read from input header
   bool header;
+  bool hasTotal;
   FILE* tmpFile;
   char* ngram;
 
 public:
-  CountFilter(long threshold)
+  CountFilter(long threshold, bool hasTotal)
   {
     this->threshold = threshold;    
-    tmpFile = tmpfile();
+    this->hasTotal = hasTotal;
+    if(hasTotal)
+      tmpFile = tmpfile();
+    else
+      tmpFile = stdout;
     cBelow = cAbove = cExpectedTotal = 0;
-    header = true;
+    header = hasTotal;
     ngram = new char[1024*1024];
   }
 
   ~CountFilter()
   {
     delete ngram;
-    if(tmpFile != NULL)
+    if(tmpFile != NULL && hasTotal)
       fclose(tmpFile);
   }
 
@@ -85,33 +90,35 @@ public:
 
   void close() 
   {
-    if(cBelow + cAbove != cExpectedTotal) {
+    if(hasTotal && cBelow + cAbove != cExpectedTotal) {
       cerr << "WARNING: actual number of ngrams does not match header: " << (cBelow + cAbove)
            << " vs. " << cExpectedTotal << endl;
     }
-    fflush(tmpFile);
-    rewind(tmpFile);
-    printf("%ld\n", cAbove);
+    if(hasTotal) {
+      fflush(tmpFile);
+      rewind(tmpFile);
+      printf("%ld\n", cAbove);
 
-    const size_t buf_size = 100*1024*1024;
-    char* buf = new char[buf_size];
-    while(true) {
-      char* read = fgets(buf, buf_size, tmpFile);
-      if(read)
-        fputs(buf, stdout);
-      else
-        break;
-    }
+      const size_t buf_size = 100*1024*1024;
+      char* buf = new char[buf_size];
+      while(true) {
+        char* read = fgets(buf, buf_size, tmpFile);
+        if(read)
+          fputs(buf, stdout);
+        else
+          break;
+      }
 
-    if(!feof(tmpFile)) {
+      if(!feof(tmpFile)) {
+        delete[] buf;
+        fclose(tmpFile);
+        tmpFile = NULL;
+        throw string("ERROR: could not read temporary file.");      
+      }    
+    
       delete[] buf;
       fclose(tmpFile);
-      tmpFile = NULL;
-      throw string("ERROR: could not read temporary file.");      
-    }    
-    
-    delete[] buf;
-    fclose(tmpFile);
+    }
     tmpFile = NULL;
   }
 };
@@ -124,11 +131,15 @@ void printUsage(const char* name)
 int main(int argc, const char** argv)
 {
   long threshold = 5;
+  bool hasTotal = true;
 
   for(int i=1; i<argc; i++) {
     if(strcmp("-t", argv[i]) == 0 && i<argc-1) {
       threshold = atoi(argv[i+1]);
       i++;
+    }
+    else if(strcmp("-nt", argv[i]) == 0) {
+      hasTotal = false;
     }
     else {
       printUsage(argv[0]);
@@ -136,7 +147,7 @@ int main(int argc, const char** argv)
     }
   }
 
-  CountFilter filter = CountFilter(threshold);
+  CountFilter filter = CountFilter(threshold, hasTotal);
 
   string line;
   try {

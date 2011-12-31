@@ -27,6 +27,9 @@
 #define utilities_h
 
 #include <sstream>
+#include <fstream>
+#include <string>
+#include <vector>
 #include <pcre.h>
 #include <string.h>
 #include "time.h"
@@ -57,5 +60,8 @@ long findchr(const char* str, char ch);
 char* deconstructCount(const char* str, char* ngram, long* count);
 void eta(timespec start, unsigned int current, unsigned int total,
          unsigned int* hours, unsigned int* minutes, unsigned int* seconds);
+double readProgress(std::ifstream& file, long size);
+void words(std::string& str, std::vector<std::string>& vec);
+void words(char* str, std::vector<std::string>& vec);
 
 #endif // utilities_h

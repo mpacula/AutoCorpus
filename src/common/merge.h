@@ -23,6 +23,11 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#ifndef merge_h
+#define merge_h
+
 // Reads two sorted files of counts and merges them into an output
 // file with the counts added up.
-int mergeCounts(FILE* src1, FILE* src2, FILE* out);
+size_t mergeCounts(FILE* src1, FILE* src2, FILE* out);
+
+#endif
