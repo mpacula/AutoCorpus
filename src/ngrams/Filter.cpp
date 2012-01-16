@@ -24,7 +24,6 @@
     You should have received a copy of the GNU Affero General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-/** Filters out bigrams with low counts */
 
 #include <stdio.h>
 #include <iostream>
@@ -125,7 +124,7 @@ public:
 
 void printUsage(const char* name)
 {
-  printf("Usage: %s [-t THRESHOLD]\n", name);
+  printf("Usage: %s [-t THRESHOLD] [-nt]\n", name);
 }
 
 int main(int argc, const char** argv)

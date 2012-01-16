@@ -46,6 +46,7 @@ class Tokenizer
 private:
   const char* keep; // punctuation to include in output  
   bool includeParens;
+  bool downcase;
   char lastChar;
   PCREMatcher* abbreviationMatcher;  
   
@@ -92,14 +93,15 @@ private:
       if(ch == ' ')
         printSpace();
       else
-        printChar(tolower(ch));
+        printChar(downcase ? tolower(ch) : ch);
     }
   }
 
 public:
-  Tokenizer(const char* keep, bool includeParens) {
+  Tokenizer(const char* keep, bool includeParens, bool downcase) {
     this->keep = keep;
     this->includeParens = includeParens;
+    this->downcase = downcase;
     this->lastChar = '\0';
     this->abbreviationMatcher = new PCREMatcher(ABBREVIATION_REGEX, 0);
   }
@@ -162,7 +164,7 @@ public:
             printSpace();
         }
         else if(!isPunctuation(ch))
-          printChar(tolower(ch));
+          printChar(downcase ? tolower(ch) : ch);
       }
     }
 
@@ -178,6 +180,7 @@ void printUsage(const char* name)
 int main(int argc, const char** argv)
 {
   bool includeParens = false;
+  bool downcase = true;
   const char* keep = "";
 
   for(int i=1; i<argc; i++) {
@@ -188,13 +191,16 @@ int main(int argc, const char** argv)
     else if(strcmp("--parens", argv[i]) == 0) {
       includeParens = true;
     }
+    else if(strcmp("--keep-case", argv[i]) == 0) {
+      downcase = false;
+    }
     else {
       printUsage(argv[0]);
       return 1;
     }
   }
 
-  Tokenizer tokenizer(keep, includeParens);
+  Tokenizer tokenizer(keep, includeParens, downcase);
 
   string line;
   try {
