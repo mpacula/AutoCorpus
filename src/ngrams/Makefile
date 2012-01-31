@@ -7,7 +7,7 @@ ALL_OBJFILES = $(patsubst %.cpp,%.o,$(wildcard *.cpp))
 OBJFILES = $(filter-out NGramCounter.o Tokenizer.o Filter.o, $(ALL_OBJFILES)) $(COMMON_OBJ)
 BIN = ../../bin
 
-all: TAGS $(BIN)/ngrams $(BIN)/tokenize $(BIN)/ngrams-freq-filter
+all: $(BIN)/ngrams $(BIN)/tokenize $(BIN)/ngrams-freq-filter
 
 TAGS: $(wildcard *.cpp)
 	etags $(wildcard *.cpp)

@@ -7,7 +7,7 @@ ALL_OBJFILES = $(patsubst %.cpp,%.o,$(wildcard *.cpp))
 OBJFILES = $(filter-out Collocations.o MutualInformation.o, $(ALL_OBJFILES)) $(COMMON_OBJ)
 BIN = ../../bin
 
-all: TAGS $(BIN)/collocations $(BIN)/mutual-information
+all: $(BIN)/collocations $(BIN)/mutual-information
 
 TAGS: $(wildcard *.cpp)
 	etags $(wildcard *.cpp)

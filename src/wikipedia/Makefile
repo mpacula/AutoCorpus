@@ -8,7 +8,7 @@ OBJFILES = $(filter-out Sentences.o Textify.o, $(ALL_OBJFILES)) $(COMMON_OBJ)
 BIN = ../../bin
 LIB = ../../lib
 
-all: TAGS $(BIN)/wiki-textify $(BIN)/sentences $(BIN)/wiki-articles
+all: $(BIN)/wiki-textify $(BIN)/sentences $(BIN)/wiki-articles
 
 TAGS: $(wildcard *.cpp)
 	etags $(wildcard *.cpp)

@@ -7,7 +7,7 @@ OBJFILES := $(ALL_OBJFILES)
 LIBS= -lpcre -lrt
 BIN = ../../bin
 
-all: TAGS $(OBJFILES) $(BIN)/merge-counts $(BIN)/truncate
+all: $(OBJFILES) $(BIN)/merge-counts $(BIN)/truncate
 
 $(BIN)/merge-counts: MergeCounts.cpp merge.o utilities.o
 	$(COMPILE) merge.o utilities.o MergeCounts.cpp $(LIBS) -o $(BIN)/merge-counts
