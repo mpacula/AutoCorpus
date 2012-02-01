@@ -16,6 +16,7 @@ dependencies. These are:
     - Python 2.7.1+
     - g++ 4.6.1
     - libpcre3-dev
+    - libboost-dev 1.46
     - libboost-thread-dev 1.46
 
 Older versions *might* work, but have not been tested.
